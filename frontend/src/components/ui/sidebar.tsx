@@ -8,7 +8,7 @@ const Sidebar = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "flex h-full w-64 flex-col border-r bg-card",
+      "flex h-full w-64 flex-col border-r border-gray-100 bg-white",
       className
     )}
     {...props}
@@ -22,7 +22,7 @@ const SidebarHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex h-16 items-center border-b px-6", className)}
+    className={cn("flex h-16 items-center border-b border-gray-100 px-5", className)}
     {...props}
   />
 ))
@@ -34,7 +34,7 @@ const SidebarContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex-1 space-y-1 p-4", className)}
+    className={cn("flex-1 space-y-0.5 p-3", className)}
     {...props}
   />
 ))
@@ -49,10 +49,10 @@ const SidebarItem = React.forwardRef<
   <button
     ref={ref}
     className={cn(
-      "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
+      "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
       active
-        ? "bg-salesforce-blue text-white hover:bg-[#0088C7]"
-        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+        ? "bg-[#0176D3] text-white hover:bg-[#0160A3]"
+        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
       className
     )}
     {...props}
@@ -66,7 +66,7 @@ const SidebarFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("border-t p-4", className)}
+    className={cn("border-t border-gray-100 p-3", className)}
     {...props}
   />
 ))

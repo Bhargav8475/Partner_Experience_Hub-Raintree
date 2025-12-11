@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Cloud, Lock, CheckCircle, X, Loader2, Building2, Calendar, DollarSign, TrendingUp, Users, Briefcase, LogOut, AlertCircle, Edit, Trash2 } from 'lucide-react'
+import { CheckCircle, X, Loader2, Building2, Calendar, DollarSign, TrendingUp, Users, Briefcase, LogOut, AlertCircle, Edit, Trash2, RefreshCw, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -595,86 +595,37 @@ function App() {
     }
   }
 
-  // Progress Bar Component - Only shown after login
-  const ProgressBar = () => {
-    const steps = [
-      { num: 1, label: 'Connect CRM', active: step >= 2 },
-      { num: 2, label: 'Ready', active: step >= 3 }
-    ]
-
-    return (
-      <div className="w-full max-w-4xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          {steps.map((stepItem, index) => (
-            <div key={stepItem.num} className="flex items-center flex-1">
-              <div className="flex flex-col items-center flex-1">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                    stepItem.active
-                      ? 'bg-salesforce-blue text-white'
-                      : 'bg-gray-200 text-gray-500'
-                  }`}
-                >
-                  {stepItem.active ? (
-                    <CheckCircle className="w-6 h-6" />
-                  ) : (
-                    stepItem.num
-                  )}
-                </div>
-                <span
-                  className={`mt-2 text-sm font-medium ${
-                    stepItem.active ? 'text-salesforce-blue' : 'text-gray-500'
-                  }`}
-                >
-                  {stepItem.label}
-                </span>
-              </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={`h-1 flex-1 mx-2 transition-all ${
-                    stepItem.active ? 'bg-salesforce-blue' : 'bg-gray-200'
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Progress Bar - Show only after login (step 2 and 3) */}
-      {step >= 2 && <ProgressBar />}
 
       {/* Step 1: Login Screen */}
       {step === 1 && (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-          <Card className="w-full max-w-md">
-            <CardHeader className="space-y-1 text-center">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-[#fafaf9]">
+          <Card className="w-full max-w-md border-gray-100 shadow-sm">
+            <CardHeader className="space-y-1 text-center pb-6">
               <div className="flex justify-center mb-6">
                 <img 
                   src="/image.png" 
                   alt="Raintree Systems" 
-                  className="h-16 object-contain"
+                  className="h-14 object-contain"
                 />
               </div>
-              <CardTitle className="text-3xl font-semibold mb-2">Partner Experience Hub</CardTitle>
-              <CardDescription className="text-base">
+              <CardTitle className="text-2xl font-semibold mb-1 text-gray-900">Partner Experience Hub</CardTitle>
+              <CardDescription className="text-sm text-gray-500">
                 Powered by Raintree Systems
               </CardDescription>
-              <div className="mt-6 pt-6 border-t">
-                <CardTitle className="text-xl font-semibold mb-1">Sign in</CardTitle>
-                <CardDescription>
+              <div className="mt-8 pt-6 border-t border-gray-100">
+                <CardTitle className="text-lg font-semibold mb-1 text-gray-900">Sign in</CardTitle>
+                <CardDescription className="text-sm">
                   Enter your credentials to access your account
                 </CardDescription>
               </div>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
+            <CardContent className="pt-0">
+              <form onSubmit={handleLogin} className="space-y-5">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  <label htmlFor="email" className="text-sm font-medium text-gray-700">
                     Email
                   </label>
                   <Input
@@ -684,10 +635,11 @@ function App() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="demo@example.com"
+                    className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  <label htmlFor="password" className="text-sm font-medium text-gray-700">
                     Password
                   </label>
                   <Input
@@ -697,15 +649,16 @@ function App() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="Enter your password"
+                    className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                   />
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                  className="w-full bg-[#0176D3] hover:bg-[#0160A3] text-white shadow-sm"
                 >
                   Sign in
                 </Button>
-                <p className="text-xs text-center text-muted-foreground mt-4">
+                <p className="text-xs text-center text-gray-400 mt-4">
                   Default credentials: demo@example.com / password123
                 </p>
               </form>
@@ -716,60 +669,60 @@ function App() {
 
       {/* Step 2: CRM Selection */}
       {step === 2 && (
-        <div className="min-h-screen py-12 px-6">
+        <div className="min-h-screen py-16 px-6 bg-[#fafaf9]">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="text-2xl font-semibold text-gray-900 mb-2">
                 Connect your CRM to start syncing
               </h1>
-              <p className="text-gray-600 text-lg">
+              <p className="text-sm text-gray-500">
                 Select your source of truth to begin synchronizing opportunities
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
               {/* Salesforce Card - Primary */}
               <div
                 onClick={() => setShowAuthModal(true)}
-                className="bg-white rounded-xl shadow-lg border-4 border-salesforce-blue p-8 cursor-pointer hover:shadow-2xl transition-all transform hover:scale-105 relative overflow-hidden"
+                className="bg-white rounded-md border-2 border-[#0176D3] p-6 cursor-pointer hover:shadow-md transition-all relative"
               >
-                <div className="absolute top-0 right-0 bg-salesforce-blue text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
+                <div className="absolute top-3 right-3 bg-[#0176D3] text-white px-2 py-0.5 text-xs font-medium rounded">
                   RECOMMENDED
                 </div>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center mb-4 p-2">
+                <div className="flex flex-col items-center text-center pt-2">
+                  <div className="w-16 h-16 bg-white rounded flex items-center justify-center mb-4 p-2">
                     <img 
                       src="/salesforce-logo.png" 
                       alt="Salesforce" 
                       className="h-full w-full object-contain"
                     />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Salesforce</h3>
-                  <p className="text-gray-600 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Salesforce</h3>
+                  <p className="text-sm text-gray-500 mb-6">
                     Connect your Salesforce organization to sync opportunities
                   </p>
-                  <button className="w-full bg-salesforce-blue text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+                  <button className="w-full bg-[#0176D3] text-white py-2 rounded text-sm font-medium hover:bg-[#0160A3] transition-colors">
                     Connect
                   </button>
                 </div>
               </div>
 
               {/* HubSpot Card - Coming Soon */}
-              <div className="bg-white rounded-xl shadow-md border-2 border-gray-200 p-8 opacity-60 cursor-not-allowed relative">
-                <div className="absolute top-0 right-0 bg-gray-400 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
+              <div className="bg-white rounded-md border border-gray-200 p-6 opacity-60 cursor-not-allowed relative">
+                <div className="absolute top-3 right-3 bg-gray-400 text-white px-2 py-0.5 text-xs font-medium rounded">
                   COMING SOON
                 </div>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                    <Building2 className="w-8 h-8 text-gray-400" />
+                <div className="flex flex-col items-center text-center pt-2">
+                  <div className="w-14 h-14 bg-gray-100 rounded flex items-center justify-center mb-4">
+                    <Building2 className="w-7 h-7 text-gray-400" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-500 mb-2">HubSpot</h3>
-                  <p className="text-gray-500 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-500 mb-1">HubSpot</h3>
+                  <p className="text-sm text-gray-400 mb-6">
                     HubSpot integration coming soon
                   </p>
                   <button
                     disabled
-                    className="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold cursor-not-allowed"
+                    className="w-full bg-gray-100 text-gray-400 py-2 rounded text-sm font-medium cursor-not-allowed"
                   >
                     Coming Soon
                   </button>
@@ -777,21 +730,21 @@ function App() {
               </div>
 
               {/* Zoho Card - Coming Soon */}
-              <div className="bg-white rounded-xl shadow-md border-2 border-gray-200 p-8 opacity-60 cursor-not-allowed relative">
-                <div className="absolute top-0 right-0 bg-gray-400 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
+              <div className="bg-white rounded-md border border-gray-200 p-6 opacity-60 cursor-not-allowed relative">
+                <div className="absolute top-3 right-3 bg-gray-400 text-white px-2 py-0.5 text-xs font-medium rounded">
                   COMING SOON
                 </div>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                    <Building2 className="w-8 h-8 text-gray-400" />
+                <div className="flex flex-col items-center text-center pt-2">
+                  <div className="w-14 h-14 bg-gray-100 rounded flex items-center justify-center mb-4">
+                    <Building2 className="w-7 h-7 text-gray-400" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-500 mb-2">Zoho</h3>
-                  <p className="text-gray-500 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-500 mb-1">Zoho</h3>
+                  <p className="text-sm text-gray-400 mb-6">
                     Zoho integration coming soon
                   </p>
                   <button
                     disabled
-                    className="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold cursor-not-allowed"
+                    className="w-full bg-gray-100 text-gray-400 py-2 rounded text-sm font-medium cursor-not-allowed"
                   >
                     Coming Soon
                   </button>
@@ -804,7 +757,7 @@ function App() {
 
       {/* Step 3: Dashboard with Sidebar */}
       {step === 3 && (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen bg-[#fafaf9]">
           {/* Sidebar */}
           <Sidebar>
             <SidebarHeader>
@@ -812,13 +765,13 @@ function App() {
                 <img 
                   src="/salesforce-logo.png" 
                   alt="Salesforce" 
-                  className="h-8 object-contain"
+                  className="h-7 object-contain"
                 />
                 <div>
-                  <p className="font-semibold text-sm">Partner Experience</p>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-muted-foreground">Connected</span>
+                  <p className="font-semibold text-sm text-gray-900">Partner Experience</p>
+                  <div className="flex items-center space-x-1.5 mt-0.5">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                    <span className="text-xs text-gray-500">Connected</span>
                   </div>
                 </div>
               </div>
@@ -828,21 +781,21 @@ function App() {
                 active={activeSection === 'opportunities'}
                 onClick={() => setActiveSection('opportunities')}
               >
-                <Briefcase className="w-5 h-5" />
+                <Briefcase className="w-4 h-4" />
                 <span>Opportunities</span>
               </SidebarItem>
               <SidebarItem
                 active={activeSection === 'leads'}
                 onClick={() => setActiveSection('leads')}
               >
-                <Users className="w-5 h-5" />
+                <Users className="w-4 h-4" />
                 <span>Leads</span>
               </SidebarItem>
             </SidebarContent>
             <SidebarFooter>
               <Button
                 variant="ghost"
-                className="w-full justify-start"
+                className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 onClick={() => {
                   salesforceAPI.logout()
                   setStep(1)
@@ -859,17 +812,17 @@ function App() {
 
           {/* Main Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="p-6">
+            <div className="p-8 max-w-7xl mx-auto">
               {/* Error Display */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center space-x-3">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
+                <div className="bg-red-50 border border-red-100 rounded-md p-4 mb-6 flex items-center space-x-3">
+                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-red-800">{error}</p>
                   </div>
                   <button
                     onClick={() => setError(null)}
-                    className="text-red-600 hover:text-red-800"
+                    className="text-red-600 hover:text-red-800 flex-shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -877,44 +830,47 @@ function App() {
               )}
 
               {/* Header */}
-              <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+              <div className="mb-8">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900">
+                    <h1 className="text-2xl font-semibold text-gray-900 mb-1">
                       {activeSection === 'opportunities' ? 'Opportunities' : 'Leads'}
                     </h1>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-sm text-gray-500">
                       {activeSection === 'opportunities' 
                         ? 'Manage your sales opportunities' 
                         : 'Manage your leads and prospects'}
                     </p>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
                     <Button
                       onClick={loadSalesforceData}
                       disabled={isLoading}
                       variant="outline"
-                      className="text-gray-700 hover:bg-gray-100"
+                      size="sm"
+                      className="text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+                      title="Refresh data from Salesforce"
                     >
                       {isLoading ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                       ) : (
-                        <TrendingUp className="w-4 h-4 mr-2" />
+                        <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                       )}
                       <span>Refresh</span>
                     </Button>
                     <Button
                       onClick={() => activeSection === 'opportunities' ? setShowOpportunityModal(true) : setShowLeadModal(true)}
-                      className="bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                      size="sm"
+                      className="bg-[#0176D3] hover:bg-[#0160A3] text-white shadow-sm"
                     >
                       {activeSection === 'opportunities' ? (
                         <>
-                          <TrendingUp className="w-4 h-4 mr-2" />
+                          <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
                           <span>New Opportunity</span>
                         </>
                       ) : (
                         <>
-                          <Users className="w-4 h-4 mr-2" />
+                          <Users className="w-3.5 h-3.5 mr-1.5" />
                           <span>New Lead</span>
                         </>
                       )}
@@ -925,71 +881,69 @@ function App() {
 
               {/* Opportunities Content */}
               {activeSection === 'opportunities' && (
-                <div className="bg-white rounded-xl shadow-md p-6">
+                <div>
                   {opportunities.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 text-lg">No opportunities yet</p>
-                      <p className="text-gray-400 mt-2">Click "New Opportunity" to get started</p>
+                    <div className="text-center py-16 bg-white rounded-md border border-gray-100">
+                      <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-600 font-medium mb-1">No opportunities yet</p>
+                      <p className="text-sm text-gray-400">Click "New Opportunity" to get started</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {opportunities.map((opp) => (
                         <div
                           key={opp.id}
-                          className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                          className="bg-white rounded-md border border-gray-100 p-5 hover:border-gray-200 hover:shadow-sm transition-all"
                         >
                           <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <h3 className="text-xl font-semibold text-gray-900">{opp.name}</h3>
-                                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                <h3 className="text-base font-semibold text-gray-900 truncate">{opp.name}</h3>
+                                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium whitespace-nowrap">
                                   {opp.stage}
                                 </span>
                                 {opp.synced && (
-                                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center space-x-1">
-                                    <CheckCircle className="w-4 h-4" />
+                                  <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium flex items-center gap-1 whitespace-nowrap">
+                                    <CheckCircle className="w-3 h-3" />
                                     <span>Synced</span>
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center space-x-6 text-gray-600">
-                                <div className="flex items-center space-x-2">
-                                  <DollarSign className="w-5 h-5" />
-                                  <span className="font-semibold">${opp.amount.toLocaleString()}</span>
+                              <div className="flex items-center gap-6 text-sm text-gray-600">
+                                <div className="flex items-center gap-1.5">
+                                  <DollarSign className="w-4 h-4 text-gray-400" />
+                                  <span className="font-medium">${opp.amount.toLocaleString()}</span>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <Calendar className="w-5 h-5" />
+                                <div className="flex items-center gap-1.5">
+                                  <Calendar className="w-4 h-4 text-gray-400" />
                                   <span>{new Date(opp.closeDate).toLocaleDateString()}</span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2 ml-4">
+                            <div className="flex items-center gap-1 ml-4 flex-shrink-0">
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleEditOpportunity(opp)}
                                 disabled={!opp.synced || isUpdating}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
                                 title={!opp.synced ? "Only synced opportunities can be edited" : "Edit opportunity"}
                               >
-                                <Edit className="w-4 h-4 mr-1" />
-                                Edit
+                                <Edit className="w-4 h-4" />
                               </Button>
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteOpportunity(opp)}
                                 disabled={!opp.synced || isDeleting === opp.id}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed"
                                 title={!opp.synced ? "Only synced opportunities can be deleted" : "Delete opportunity"}
                               >
                                 {isDeleting === opp.id ? (
-                                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                  <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
-                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  <Trash2 className="w-4 h-4" />
                                 )}
-                                Delete
                               </Button>
                             </div>
                           </div>
@@ -1002,77 +956,75 @@ function App() {
 
               {/* Leads Content */}
               {activeSection === 'leads' && (
-                <div className="bg-white rounded-xl shadow-md p-6">
+                <div>
                   {isLoading ? (
-                    <div className="text-center py-12">
-                      <Loader2 className="w-8 h-8 text-gray-400 mx-auto mb-4 animate-spin" />
-                      <p className="text-gray-500">Loading leads...</p>
+                    <div className="text-center py-16 bg-white rounded-md border border-gray-100">
+                      <Loader2 className="w-6 h-6 text-gray-400 mx-auto mb-3 animate-spin" />
+                      <p className="text-sm text-gray-500">Loading leads...</p>
                     </div>
                   ) : leads.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 text-lg">No leads yet</p>
-                      <p className="text-gray-400 mt-2">Click "New Lead" to get started</p>
+                    <div className="text-center py-16 bg-white rounded-md border border-gray-100">
+                      <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-600 font-medium mb-1">No leads yet</p>
+                      <p className="text-sm text-gray-400">Click "New Lead" to get started</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {leads.map((lead) => (
                         <div
                           key={lead.id}
-                          className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                          className="bg-white rounded-md border border-gray-100 p-5 hover:border-gray-200 hover:shadow-sm transition-all"
                         >
                           <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <h3 className="text-xl font-semibold text-gray-900">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                <h3 className="text-base font-semibold text-gray-900">
                                   {lead.firstName} {lead.lastName}
                                 </h3>
-                                <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                                <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs font-medium whitespace-nowrap">
                                   {lead.status}
                                 </span>
                                 {lead.synced && (
-                                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center space-x-1">
-                                    <CheckCircle className="w-4 h-4" />
+                                  <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium flex items-center gap-1 whitespace-nowrap">
+                                    <CheckCircle className="w-3 h-3" />
                                     <span>Synced</span>
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center space-x-6 text-gray-600">
-                                <div className="flex items-center space-x-2">
-                                  <Building2 className="w-5 h-5" />
+                              <div className="flex items-center gap-6 text-sm text-gray-600">
+                                <div className="flex items-center gap-1.5">
+                                  <Building2 className="w-4 h-4 text-gray-400" />
                                   <span className="font-medium">{lead.company}</span>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm">{lead.email}</span>
+                                <div className="text-gray-500">
+                                  {lead.email}
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2 ml-4">
+                            <div className="flex items-center gap-1 ml-4 flex-shrink-0">
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleEditLead(lead)}
                                 disabled={!lead.synced || isUpdating}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
                                 title={!lead.synced ? "Only synced leads can be edited" : "Edit lead"}
                               >
-                                <Edit className="w-4 h-4 mr-1" />
-                                Edit
+                                <Edit className="w-4 h-4" />
                               </Button>
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteLead(lead)}
                                 disabled={!lead.synced || isDeleting === lead.id}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed"
                                 title={!lead.synced ? "Only synced leads can be deleted" : "Delete lead"}
                               >
                                 {isDeleting === lead.id ? (
-                                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                  <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
-                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  <Trash2 className="w-4 h-4" />
                                 )}
-                                Delete
                               </Button>
                             </div>
                           </div>
@@ -1089,13 +1041,13 @@ function App() {
 
       {/* Salesforce Authentication Modal */}
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 relative">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-md shadow-lg max-w-md w-full p-6 relative border border-gray-100">
             <button
               onClick={() => setShowAuthModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
             <div className="mb-6">
@@ -1103,36 +1055,36 @@ function App() {
                 <img 
                   src="/salesforce-logo.png" 
                   alt="Salesforce" 
-                  className="h-10 object-contain"
+                  className="h-8 object-contain"
                 />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1.5 text-center">
                 Authenticate with Salesforce
               </h2>
-              <p className="text-gray-600 text-center">
+              <p className="text-sm text-gray-500 text-center">
                 Enter your Salesforce credentials to connect your organization
               </p>
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 text-red-600" />
+              <div className="bg-red-50 border border-red-100 rounded-md p-3 mb-4 flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
                 <p className="text-sm text-red-800">{error}</p>
               </div>
             )}
 
             {showSuccess ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="text-center py-6">
+                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
-                <p className="text-xl font-semibold text-gray-900">Success!</p>
-                <p className="text-gray-600 mt-2">Your Salesforce account has been connected</p>
+                <p className="text-lg font-semibold text-gray-900">Success!</p>
+                <p className="text-sm text-gray-500 mt-1">Your Salesforce account has been connected</p>
               </div>
             ) : (
               <form onSubmit={handleSalesforceAuth} className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="sf-username" className="text-sm font-medium leading-none">
+                  <label htmlFor="sf-username" className="text-sm font-medium text-gray-700">
                     Salesforce Username
                   </label>
                   <Input
@@ -1142,12 +1094,12 @@ function App() {
                     onChange={(e) => setSalesforceUsername(e.target.value)}
                     required
                     placeholder="username@example.com"
-                    className="focus:ring-salesforce-blue"
+                    className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="sf-password" className="text-sm font-medium leading-none">
+                  <label htmlFor="sf-password" className="text-sm font-medium text-gray-700">
                     Password
                   </label>
                   <Input
@@ -1157,12 +1109,12 @@ function App() {
                     onChange={(e) => setSalesforcePassword(e.target.value)}
                     required
                     placeholder="Enter your password"
-                    className="focus:ring-salesforce-blue"
+                    className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="sf-token" className="text-sm font-medium leading-none">
+                  <label htmlFor="sf-token" className="text-sm font-medium text-gray-700">
                     Security Token
                   </label>
                   <Input
@@ -1172,9 +1124,9 @@ function App() {
                     onChange={(e) => setSalesforceToken(e.target.value)}
                     required
                     placeholder="Enter your security token"
-                    className="focus:ring-salesforce-blue font-mono text-sm"
+                    className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3] font-mono text-sm"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-400">
                     Your security token is required for API authentication
                   </p>
                 </div>
@@ -1182,7 +1134,7 @@ function App() {
                 <Button
                   type="submit"
                   disabled={isAuthenticating}
-                  className="w-full bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                  className="w-full bg-[#0176D3] hover:bg-[#0160A3] text-white shadow-sm"
                 >
                   {isAuthenticating ? (
                     <>
@@ -1201,27 +1153,27 @@ function App() {
 
       {/* Log Opportunity Modal */}
       {showOpportunityModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8 relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-md shadow-lg max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto border border-gray-100">
             <button
               onClick={() => setShowOpportunityModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1.5">
                 Create Opportunity in Salesforce
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm text-gray-500">
                 Fill in the details to log a new opportunity
               </p>
             </div>
 
             <form onSubmit={handleCreateOpportunity} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="opp-name" className="text-sm font-medium leading-none">
+                <label htmlFor="opp-name" className="text-sm font-medium text-gray-700">
                   Opportunity Name
                 </label>
                 <Input
@@ -1231,19 +1183,19 @@ function App() {
                   onChange={(e) => setOppName(e.target.value)}
                   required
                   placeholder="e.g., Q4 Enterprise Deal"
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="opp-stage" className="text-sm font-medium leading-none">
+                <label htmlFor="opp-stage" className="text-sm font-medium text-gray-700">
                   Stage
                 </label>
                 <select
                   id="opp-stage"
                   value={oppStage}
                   onChange={(e) => setOppStage(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-salesforce-blue focus-visible:ring-offset-2"
+                  className="flex h-10 w-full rounded-md border border-gray-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0176D3] focus-visible:ring-offset-2"
                 >
                   <option value="Prospecting">Prospecting</option>
                   <option value="Qualification">Qualification</option>
@@ -1252,7 +1204,7 @@ function App() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="opp-amount" className="text-sm font-medium leading-none">
+                <label htmlFor="opp-amount" className="text-sm font-medium text-gray-700">
                   Amount ($)
                 </label>
                 <Input
@@ -1264,12 +1216,12 @@ function App() {
                   min="0"
                   step="0.01"
                   placeholder="0.00"
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="opp-date" className="text-sm font-medium leading-none">
+                <label htmlFor="opp-date" className="text-sm font-medium text-gray-700">
                   Close Date
                 </label>
                 <Input
@@ -1278,16 +1230,16 @@ function App() {
                   value={oppCloseDate}
                   onChange={(e) => setOppCloseDate(e.target.value)}
                   required
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-100">
                 <div>
-                  <label htmlFor="sync-toggle" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="sync-toggle" className="block text-sm font-medium text-gray-700 mb-0.5">
                     Sync to Raintree Systems immediately
                   </label>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-400">
                     Enable automatic synchronization upon creation
                   </p>
                 </div>
@@ -1299,23 +1251,23 @@ function App() {
                     onChange={(e) => setSyncToRaintree(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-salesforce-blue/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-salesforce-blue"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0176D3]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0176D3]"></div>
                 </label>
               </div>
 
-              <div className="flex space-x-4 pt-4">
+              <div className="flex space-x-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowOpportunityModal(false)}
-                  className="flex-1"
+                  className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={isCreating}
-                  className="flex-1 bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                  className="flex-1 bg-[#0176D3] hover:bg-[#0160A3] text-white shadow-sm"
                 >
                   {isCreating ? (
                     <>
@@ -1334,8 +1286,8 @@ function App() {
 
       {/* Edit Opportunity Modal */}
       {showEditOpportunityModal && editingOpportunity && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8 relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-md shadow-lg max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto border border-gray-100">
             <button
               onClick={() => {
                 setShowEditOpportunityModal(false)
@@ -1343,21 +1295,21 @@ function App() {
               }}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1.5">
                 Edit Opportunity
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm text-gray-500">
                 Update the opportunity details
               </p>
             </div>
 
             <form onSubmit={handleUpdateOpportunity} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="edit-opp-name" className="text-sm font-medium leading-none">
+                <label htmlFor="edit-opp-name" className="text-sm font-medium text-gray-700">
                   Opportunity Name
                 </label>
                 <Input
@@ -1367,19 +1319,19 @@ function App() {
                   onChange={(e) => setEditOppName(e.target.value)}
                   required
                   placeholder="e.g., Q4 Enterprise Deal"
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="edit-opp-stage" className="text-sm font-medium leading-none">
+                <label htmlFor="edit-opp-stage" className="text-sm font-medium text-gray-700">
                   Stage
                 </label>
                 <select
                   id="edit-opp-stage"
                   value={editOppStage}
                   onChange={(e) => setEditOppStage(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-salesforce-blue focus-visible:ring-offset-2"
+                  className="flex h-10 w-full rounded-md border border-gray-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0176D3] focus-visible:ring-offset-2"
                 >
                   <option value="Prospecting">Prospecting</option>
                   <option value="Qualification">Qualification</option>
@@ -1388,7 +1340,7 @@ function App() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="edit-opp-amount" className="text-sm font-medium leading-none">
+                <label htmlFor="edit-opp-amount" className="text-sm font-medium text-gray-700">
                   Amount ($)
                 </label>
                 <Input
@@ -1400,12 +1352,12 @@ function App() {
                   min="0"
                   step="0.01"
                   placeholder="0.00"
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="edit-opp-date" className="text-sm font-medium leading-none">
+                <label htmlFor="edit-opp-date" className="text-sm font-medium text-gray-700">
                   Close Date
                 </label>
                 <Input
@@ -1414,16 +1366,16 @@ function App() {
                   value={editOppCloseDate}
                   onChange={(e) => setEditOppCloseDate(e.target.value)}
                   required
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-100">
                 <div>
-                  <label htmlFor="edit-sync-toggle" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="edit-sync-toggle" className="block text-sm font-medium text-gray-700 mb-0.5">
                     Sync to Raintree Systems
                   </label>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-400">
                     Update in Raintree Salesforce as well
                   </p>
                   {editSyncToRaintree && !editingOpportunity?.raintreeOpportunityId && (
@@ -1440,11 +1392,11 @@ function App() {
                     onChange={(e) => setEditSyncToRaintree(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-salesforce-blue/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-salesforce-blue"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0176D3]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0176D3]"></div>
                 </label>
               </div>
 
-              <div className="flex space-x-4 pt-4">
+              <div className="flex space-x-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -1452,14 +1404,14 @@ function App() {
                     setShowEditOpportunityModal(false)
                     setEditingOpportunity(null)
                   }}
-                  className="flex-1"
+                  className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={isUpdating}
-                  className="flex-1 bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                  className="flex-1 bg-[#0176D3] hover:bg-[#0160A3] text-white shadow-sm"
                 >
                   {isUpdating ? (
                     <>
@@ -1478,20 +1430,20 @@ function App() {
 
       {/* Create Lead Modal */}
       {showLeadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8 relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-md shadow-lg max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto border border-gray-100">
             <button
               onClick={() => setShowLeadModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1.5">
                 Create Lead in Salesforce
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm text-gray-500">
                 Fill in the details to create a new lead
               </p>
             </div>
@@ -1499,7 +1451,7 @@ function App() {
             <form onSubmit={handleCreateLead} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="lead-firstname" className="text-sm font-medium leading-none">
+                  <label htmlFor="lead-firstname" className="text-sm font-medium text-gray-700">
                     First Name
                   </label>
                   <Input
@@ -1509,11 +1461,11 @@ function App() {
                     onChange={(e) => setLeadFirstName(e.target.value)}
                     required
                     placeholder="John"
-                    className="focus:ring-salesforce-blue"
+                    className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="lead-lastname" className="text-sm font-medium leading-none">
+                  <label htmlFor="lead-lastname" className="text-sm font-medium text-gray-700">
                     Last Name
                   </label>
                   <Input
@@ -1523,13 +1475,13 @@ function App() {
                     onChange={(e) => setLeadLastName(e.target.value)}
                     required
                     placeholder="Doe"
-                    className="focus:ring-salesforce-blue"
+                    className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="lead-company" className="text-sm font-medium leading-none">
+                <label htmlFor="lead-company" className="text-sm font-medium text-gray-700">
                   Company
                 </label>
                 <Input
@@ -1539,12 +1491,12 @@ function App() {
                   onChange={(e) => setLeadCompany(e.target.value)}
                   required
                   placeholder="Acme Inc."
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="lead-email" className="text-sm font-medium leading-none">
+                <label htmlFor="lead-email" className="text-sm font-medium text-gray-700">
                   Email
                 </label>
                 <Input
@@ -1554,19 +1506,19 @@ function App() {
                   onChange={(e) => setLeadEmail(e.target.value)}
                   required
                   placeholder="john.doe@acme.com"
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="lead-status" className="text-sm font-medium leading-none">
+                <label htmlFor="lead-status" className="text-sm font-medium text-gray-700">
                   Status
                 </label>
                 <select
                   id="lead-status"
                   value={leadStatus}
                   onChange={(e) => setLeadStatus(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-salesforce-blue focus-visible:ring-offset-2"
+                  className="flex h-10 w-full rounded-md border border-gray-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0176D3] focus-visible:ring-offset-2"
                 >
                   <option value="Open - Not Contacted">Open - Not Contacted</option>
                   <option value="Working - Contacted">Working - Contacted</option>
@@ -1575,12 +1527,12 @@ function App() {
                 </select>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-100">
                 <div>
-                  <label htmlFor="sync-lead-toggle" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="sync-lead-toggle" className="block text-sm font-medium text-gray-700 mb-0.5">
                     Sync to Raintree Systems immediately
                   </label>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-400">
                     Enable automatic synchronization upon creation
                   </p>
                 </div>
@@ -1592,23 +1544,23 @@ function App() {
                     onChange={(e) => setSyncLeadToRaintree(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-salesforce-blue/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-salesforce-blue"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0176D3]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0176D3]"></div>
                 </label>
               </div>
 
-              <div className="flex space-x-4 pt-4">
+              <div className="flex space-x-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowLeadModal(false)}
-                  className="flex-1"
+                  className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={isCreating}
-                  className="flex-1 bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                  className="flex-1 bg-[#0176D3] hover:bg-[#0160A3] text-white shadow-sm"
                 >
                   {isCreating ? (
                     <>
@@ -1627,8 +1579,8 @@ function App() {
 
       {/* Edit Lead Modal */}
       {showEditLeadModal && editingLead && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8 relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-md shadow-lg max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto border border-gray-100">
             <button
               onClick={() => {
                 setShowEditLeadModal(false)
@@ -1636,14 +1588,14 @@ function App() {
               }}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1.5">
                 Edit Lead
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm text-gray-500">
                 Update the lead details
               </p>
             </div>
@@ -1651,7 +1603,7 @@ function App() {
             <form onSubmit={handleUpdateLead} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="edit-lead-firstname" className="text-sm font-medium leading-none">
+                  <label htmlFor="edit-lead-firstname" className="text-sm font-medium text-gray-700">
                     First Name
                   </label>
                   <Input
@@ -1661,11 +1613,11 @@ function App() {
                     onChange={(e) => setEditLeadFirstName(e.target.value)}
                     required
                     placeholder="John"
-                    className="focus:ring-salesforce-blue"
+                    className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="edit-lead-lastname" className="text-sm font-medium leading-none">
+                  <label htmlFor="edit-lead-lastname" className="text-sm font-medium text-gray-700">
                     Last Name
                   </label>
                   <Input
@@ -1675,13 +1627,13 @@ function App() {
                     onChange={(e) => setEditLeadLastName(e.target.value)}
                     required
                     placeholder="Doe"
-                    className="focus:ring-salesforce-blue"
+                    className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="edit-lead-company" className="text-sm font-medium leading-none">
+                <label htmlFor="edit-lead-company" className="text-sm font-medium text-gray-700">
                   Company
                 </label>
                 <Input
@@ -1691,12 +1643,12 @@ function App() {
                   onChange={(e) => setEditLeadCompany(e.target.value)}
                   required
                   placeholder="Acme Inc."
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="edit-lead-email" className="text-sm font-medium leading-none">
+                <label htmlFor="edit-lead-email" className="text-sm font-medium text-gray-700">
                   Email
                 </label>
                 <Input
@@ -1706,19 +1658,19 @@ function App() {
                   onChange={(e) => setEditLeadEmail(e.target.value)}
                   required
                   placeholder="john.doe@acme.com"
-                  className="focus:ring-salesforce-blue"
+                  className="border-gray-200 focus:border-[#0176D3] focus:ring-[#0176D3]"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="edit-lead-status" className="text-sm font-medium leading-none">
+                <label htmlFor="edit-lead-status" className="text-sm font-medium text-gray-700">
                   Status
                 </label>
                 <select
                   id="edit-lead-status"
                   value={editLeadStatus}
                   onChange={(e) => setEditLeadStatus(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-salesforce-blue focus-visible:ring-offset-2"
+                  className="flex h-10 w-full rounded-md border border-gray-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0176D3] focus-visible:ring-offset-2"
                 >
                   <option value="Open - Not Contacted">Open - Not Contacted</option>
                   <option value="Working - Contacted">Working - Contacted</option>
@@ -1727,12 +1679,12 @@ function App() {
                 </select>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-100">
                 <div>
-                  <label htmlFor="edit-sync-lead-toggle" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="edit-sync-lead-toggle" className="block text-sm font-medium text-gray-700 mb-0.5">
                     Sync to Raintree Systems
                   </label>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-400">
                     Update in Raintree Salesforce as well
                   </p>
                   {editSyncLeadToRaintree && !editingLead?.raintreeLeadId && (
@@ -1749,11 +1701,11 @@ function App() {
                     onChange={(e) => setEditSyncLeadToRaintree(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-salesforce-blue/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-salesforce-blue"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0176D3]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0176D3]"></div>
                 </label>
               </div>
 
-              <div className="flex space-x-4 pt-4">
+              <div className="flex space-x-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -1761,14 +1713,14 @@ function App() {
                     setShowEditLeadModal(false)
                     setEditingLead(null)
                   }}
-                  className="flex-1"
+                  className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={isUpdating}
-                  className="flex-1 bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                  className="flex-1 bg-[#0176D3] hover:bg-[#0160A3] text-white shadow-sm"
                 >
                   {isUpdating ? (
                     <>
