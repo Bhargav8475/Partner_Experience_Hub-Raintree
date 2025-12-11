@@ -1,0 +1,217 @@
+// Salesforce API Service - Frontend client for backend API
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+
+interface OpportunityData {
+  Name: string
+  StageName: string
+  Amount: number
+  CloseDate: string
+}
+
+interface PartnerCredentials {
+  email: string
+  password: string
+  securityToken: string
+}
+
+class SalesforceAPI {
+  private partnerCredentials: PartnerCredentials | null = null
+
+  /**
+   * Store partner credentials (for authentication and API calls)
+   * Also pre-authenticates Raintree Salesforce using the same OAuth flow
+   */
+  async authenticate(username: string, password: string, securityToken: string): Promise<void> {
+    try {
+      // Validate credentials
+      if (!username || !password || !securityToken) {
+        throw new Error('Username, password, and security token are required')
+      }
+
+      // Store credentials for API calls
+      this.partnerCredentials = {
+        email: username,
+        password: password,
+        securityToken: securityToken
+      }
+
+      // Store in localStorage for persistence
+      localStorage.setItem('salesforce_username', username)
+      localStorage.setItem('salesforce_password', password)
+      localStorage.setItem('salesforce_token', securityToken)
+
+      console.log('✅ Partner credentials stored for:', username)
+
+      // Pre-authenticate Raintree Salesforce using the same OAuth Username-Password flow
+      try {
+        console.log('🔐 Pre-authenticating Raintree Salesforce...')
+        const raintreeResponse = await fetch(`${API_BASE_URL}/api/auth/raintree`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (raintreeResponse.ok) {
+          console.log('✅ Raintree Salesforce pre-authenticated successfully')
+        } else {
+          const errorData = await raintreeResponse.json().catch(() => ({}))
+          console.warn('⚠️ Raintree pre-authentication failed (will retry on sync):', errorData.message || 'Unknown error')
+          // Don't throw - we'll retry when syncing
+        }
+      } catch (raintreeError: any) {
+        console.warn('⚠️ Raintree pre-authentication error (will retry on sync):', raintreeError.message)
+        // Don't throw - partner authentication succeeded, Raintree will retry on sync
+      }
+    } catch (error) {
+      console.error('Salesforce authentication error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get stored partner credentials
+   */
+  private getPartnerCredentials(): PartnerCredentials {
+    if (this.partnerCredentials) {
+      return this.partnerCredentials
+    }
+
+    // Try to load from localStorage
+    const username = localStorage.getItem('salesforce_username')
+    const password = localStorage.getItem('salesforce_password')
+    const token = localStorage.getItem('salesforce_token')
+
+    if (username && password && token) {
+      this.partnerCredentials = {
+        email: username,
+        password: password,
+        securityToken: token
+      }
+      return this.partnerCredentials
+    }
+
+    throw new Error('Not authenticated. Please connect to Salesforce first.')
+  }
+
+  /**
+   * Create an Opportunity in Salesforce via backend API
+   */
+  async createOpportunity(
+    opportunityData: OpportunityData,
+    syncToRaintree: boolean = false
+  ): Promise<string> {
+    try {
+      const credentials = this.getPartnerCredentials()
+
+      const response = await fetch(`${API_BASE_URL}/api/opportunities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          opportunity: opportunityData,
+          partnerCredentials: credentials,
+          syncToRaintree: syncToRaintree
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to create opportunity')
+      }
+
+      const data = await response.json()
+      
+      // Check for Raintree sync errors
+      if (data.data?.errors && data.data.errors.length > 0) {
+        console.warn('⚠️ Raintree sync errors:', data.data.errors)
+        // Store errors for display (we'll handle this in the component)
+        if (data.data.errors.length > 0) {
+          const raintreeError = data.data.errors.find((e: string) => e.includes('Raintree'))
+          if (raintreeError) {
+            throw new Error(`Partner opportunity created, but ${raintreeError}`)
+          }
+        }
+      }
+      
+      // Return partner Salesforce ID (primary)
+      if (data.data?.partnerSalesforceId) {
+        return data.data.partnerSalesforceId
+      }
+
+      throw new Error('No opportunity ID returned from server')
+    } catch (error: any) {
+      console.error('Error creating opportunity:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get all Opportunities from Salesforce via backend API
+   */
+  async getOpportunities(): Promise<any[]> {
+    try {
+      const credentials = this.getPartnerCredentials()
+
+      const params = new URLSearchParams({
+        email: credentials.email,
+        password: credentials.password,
+        securityToken: credentials.securityToken
+      })
+
+      const response = await fetch(`${API_BASE_URL}/api/opportunities?${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to fetch opportunities')
+      }
+
+      const data = await response.json()
+      return data.data || []
+    } catch (error: any) {
+      console.error('Error fetching opportunities:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Create a Lead in Salesforce (placeholder for future implementation)
+   */
+  async createLead(leadData: {
+    FirstName: string
+    LastName: string
+    Company: string
+    Email: string
+    Status: string
+  }): Promise<string> {
+    // TODO: Implement lead creation endpoint in backend
+    throw new Error('Lead creation not yet implemented in backend')
+  }
+
+  /**
+   * Get all Leads from Salesforce (placeholder for future implementation)
+   */
+  async getLeads(): Promise<any[]> {
+    // TODO: Implement lead fetching endpoint in backend
+    return []
+  }
+
+  /**
+   * Clear authentication
+   */
+  logout(): void {
+    this.partnerCredentials = null
+    localStorage.removeItem('salesforce_username')
+    localStorage.removeItem('salesforce_password')
+    localStorage.removeItem('salesforce_token')
+  }
+}
+
+export const salesforceAPI = new SalesforceAPI()
+
