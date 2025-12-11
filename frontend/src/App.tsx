@@ -25,6 +25,7 @@ interface Lead {
   email: string
   status: string
   synced: boolean
+  raintreeLeadId?: string // ID of the lead in Raintree Salesforce (if synced)
 }
 
 function App() {
@@ -42,6 +43,8 @@ function App() {
   const [showEditOpportunityModal, setShowEditOpportunityModal] = useState<boolean>(false)
   const [editingOpportunity, setEditingOpportunity] = useState<Opportunity | null>(null)
   const [showLeadModal, setShowLeadModal] = useState<boolean>(false)
+  const [showEditLeadModal, setShowEditLeadModal] = useState<boolean>(false)
+  const [editingLead, setEditingLead] = useState<Lead | null>(null)
   const [activeSection, setActiveSection] = useState<'opportunities' | 'leads'>('opportunities')
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
@@ -72,6 +75,14 @@ function App() {
   const [leadEmail, setLeadEmail] = useState<string>('')
   const [leadStatus, setLeadStatus] = useState<string>('Open - Not Contacted')
   const [syncLeadToRaintree, setSyncLeadToRaintree] = useState<boolean>(false)
+  
+  // Edit lead form state
+  const [editLeadFirstName, setEditLeadFirstName] = useState<string>('')
+  const [editLeadLastName, setEditLeadLastName] = useState<string>('')
+  const [editLeadCompany, setEditLeadCompany] = useState<string>('')
+  const [editLeadEmail, setEditLeadEmail] = useState<string>('')
+  const [editLeadStatus, setEditLeadStatus] = useState<string>('Open - Not Contacted')
+  const [editSyncLeadToRaintree, setEditSyncLeadToRaintree] = useState<boolean>(false)
 
   // Step 1: Handle Login
   const handleLogin = (e: React.FormEvent) => {
@@ -144,16 +155,34 @@ function App() {
         raintreeId: opp.raintreeOpportunityId
       })))
 
+      // Load lead mappings from localStorage
+      const leadMappings = JSON.parse(localStorage.getItem('lead_mappings') || '{}')
+      console.log('📋 Loaded lead mappings from localStorage:', leadMappings)
+      
       // Transform Salesforce leads to our format
-      const transformedLeads: Lead[] = sfLeads.map((lead: any) => ({
-        id: lead.Id,
-        firstName: lead.FirstName || '',
-        lastName: lead.LastName || '',
-        company: lead.Company || '',
-        email: lead.Email || '',
-        status: lead.Status || 'Open - Not Contacted',
-        synced: true
-      }))
+      const transformedLeads: Lead[] = sfLeads.map((lead: any) => {
+        const raintreeId = leadMappings[lead.Id] // Check if we have a mapping for this lead
+        if (raintreeId) {
+          console.log(`✅ Found Raintree mapping for lead ${lead.Id}: ${raintreeId}`)
+        }
+        return {
+          id: lead.Id,
+          firstName: lead.FirstName || '',
+          lastName: lead.LastName || '',
+          company: lead.Company || '',
+          email: lead.Email || '',
+          status: lead.Status || 'Open - Not Contacted',
+          synced: !!raintreeId, // Set synced to true only if we have a Raintree ID
+          raintreeLeadId: raintreeId
+        }
+      })
+      
+      console.log('📊 Transformed leads:', transformedLeads.map(lead => ({
+        id: lead.id,
+        name: `${lead.firstName} ${lead.lastName}`,
+        synced: lead.synced,
+        raintreeId: lead.raintreeLeadId
+      })))
 
       setOpportunities(transformedOpps)
       setLeads(transformedLeads)
@@ -371,13 +400,61 @@ function App() {
 
     try {
       // Always sync to Salesforce (the toggle is for Raintree sync)
-      const salesforceId = await salesforceAPI.createLead({
-        FirstName: leadFirstName,
-        LastName: leadLastName,
-        Company: leadCompany,
-        Email: leadEmail,
-        Status: leadStatus
+      // Get the full response to check for Raintree ID
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+      const credentials = {
+        email: localStorage.getItem('salesforce_username') || '',
+        password: localStorage.getItem('salesforce_password') || '',
+        securityToken: localStorage.getItem('salesforce_token') || ''
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/leads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead: {
+            FirstName: leadFirstName,
+            LastName: leadLastName,
+            Company: leadCompany,
+            Email: leadEmail,
+            Status: leadStatus
+          },
+          partnerCredentials: credentials,
+          syncToRaintree: syncLeadToRaintree
+        })
       })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to create lead')
+      }
+
+      const responseData = await response.json()
+      const salesforceId = responseData.data?.partnerSalesforceId
+
+      if (!salesforceId) {
+        throw new Error('No lead ID returned from server')
+      }
+
+      const raintreeId = responseData.data?.raintreeSalesforceId
+      
+      console.log('📦 Create lead response:', {
+        salesforceId,
+        raintreeId,
+        syncLeadToRaintree,
+        fullResponse: responseData
+      })
+      
+      // Store the mapping in localStorage for persistence
+      if (raintreeId) {
+        const mappings = JSON.parse(localStorage.getItem('lead_mappings') || '{}')
+        mappings[salesforceId] = raintreeId
+        localStorage.setItem('lead_mappings', JSON.stringify(mappings))
+        console.log('💾 Stored lead mapping:', { partnerId: salesforceId, raintreeId })
+      } else if (syncLeadToRaintree) {
+        console.warn('⚠️ Raintree sync was enabled but no raintreeSalesforceId was returned')
+        console.warn('   Response data:', responseData.data)
+      }
 
       const newLead: Lead = {
         id: salesforceId,
@@ -386,7 +463,8 @@ function App() {
         company: leadCompany,
         email: leadEmail,
         status: leadStatus,
-        synced: syncLeadToRaintree // This indicates if synced to Raintree
+        synced: syncLeadToRaintree,
+        raintreeLeadId: raintreeId
       }
 
       setLeads([...leads, newLead])
@@ -404,6 +482,116 @@ function App() {
       console.error('Error creating lead:', err)
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  // Handle Lead Edit
+  const handleEditLead = (lead: Lead) => {
+    // Only allow editing if synced
+    if (!lead.synced) {
+      setError('Only leads synced to Raintree can be edited')
+      return
+    }
+    setEditingLead(lead)
+    setEditLeadFirstName(lead.firstName)
+    setEditLeadLastName(lead.lastName)
+    setEditLeadCompany(lead.company)
+    setEditLeadEmail(lead.email)
+    setEditLeadStatus(lead.status)
+    setEditSyncLeadToRaintree(lead.synced || false)
+    setShowEditLeadModal(true)
+  }
+
+  // Handle Lead Update
+  const handleUpdateLead = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingLead) return
+
+    setIsUpdating(true)
+    setError(null)
+
+    try {
+      await salesforceAPI.updateLead(
+        editingLead.id,
+        {
+          FirstName: editLeadFirstName,
+          LastName: editLeadLastName,
+          Company: editLeadCompany,
+          Email: editLeadEmail,
+          Status: editLeadStatus
+        },
+        editSyncLeadToRaintree,
+        editingLead.raintreeLeadId
+      )
+
+      // Update the lead in the list
+      const updatedLead = {
+        ...editingLead,
+        firstName: editLeadFirstName,
+        lastName: editLeadLastName,
+        company: editLeadCompany,
+        email: editLeadEmail,
+        status: editLeadStatus,
+        synced: editSyncLeadToRaintree,
+        // Preserve raintreeLeadId if it exists
+        raintreeLeadId: editingLead.raintreeLeadId
+      }
+      
+      setLeads(leads.map(lead => 
+        lead.id === editingLead.id ? updatedLead : lead
+      ))
+
+      // Reset form and close modal
+      setEditingLead(null)
+      setEditLeadFirstName('')
+      setEditLeadLastName('')
+      setEditLeadCompany('')
+      setEditLeadEmail('')
+      setEditLeadStatus('Open - Not Contacted')
+      setEditSyncLeadToRaintree(false)
+      setShowEditLeadModal(false)
+    } catch (err: any) {
+      setError(err.message || 'Failed to update lead')
+      console.error('Error updating lead:', err)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  // Handle Lead Delete
+  const handleDeleteLead = async (lead: Lead) => {
+    // Only allow deleting if synced
+    if (!lead.synced) {
+      setError('Only leads synced to Raintree can be deleted')
+      return
+    }
+    
+    if (!confirm(`Are you sure you want to delete "${lead.firstName} ${lead.lastName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setIsDeleting(lead.id)
+    setError(null)
+
+    try {
+      await salesforceAPI.deleteLead(
+        lead.id,
+        lead.synced || false,
+        lead.raintreeLeadId
+      )
+
+      // Remove the lead from the list
+      setLeads(leads.filter(l => l.id !== lead.id))
+      
+      // Remove from localStorage mapping
+      const mappings = JSON.parse(localStorage.getItem('lead_mappings') || '{}')
+      delete mappings[lead.id]
+      localStorage.setItem('lead_mappings', JSON.stringify(mappings))
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete lead')
+      console.error('Error deleting lead:', err)
+    } finally {
+      setIsDeleting(null)
     }
   }
 
@@ -858,6 +1046,34 @@ function App() {
                                   <span className="text-sm">{lead.email}</span>
                                 </div>
                               </div>
+                            </div>
+                            <div className="flex items-center space-x-2 ml-4">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditLead(lead)}
+                                disabled={!lead.synced || isUpdating}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!lead.synced ? "Only synced leads can be edited" : "Edit lead"}
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteLead(lead)}
+                                disabled={!lead.synced || isDeleting === lead.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!lead.synced ? "Only synced leads can be deleted" : "Delete lead"}
+                              >
+                                {isDeleting === lead.id ? (
+                                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                )}
+                                Delete
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -1401,6 +1617,166 @@ function App() {
                     </>
                   ) : (
                     'Create Lead'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Lead Modal */}
+      {showEditLeadModal && editingLead && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setShowEditLeadModal(false)
+                setEditingLead(null)
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Edit Lead
+              </h2>
+              <p className="text-gray-600">
+                Update the lead details
+              </p>
+            </div>
+
+            <form onSubmit={handleUpdateLead} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="edit-lead-firstname" className="text-sm font-medium leading-none">
+                    First Name
+                  </label>
+                  <Input
+                    id="edit-lead-firstname"
+                    type="text"
+                    value={editLeadFirstName}
+                    onChange={(e) => setEditLeadFirstName(e.target.value)}
+                    required
+                    placeholder="John"
+                    className="focus:ring-salesforce-blue"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="edit-lead-lastname" className="text-sm font-medium leading-none">
+                    Last Name
+                  </label>
+                  <Input
+                    id="edit-lead-lastname"
+                    type="text"
+                    value={editLeadLastName}
+                    onChange={(e) => setEditLeadLastName(e.target.value)}
+                    required
+                    placeholder="Doe"
+                    className="focus:ring-salesforce-blue"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="edit-lead-company" className="text-sm font-medium leading-none">
+                  Company
+                </label>
+                <Input
+                  id="edit-lead-company"
+                  type="text"
+                  value={editLeadCompany}
+                  onChange={(e) => setEditLeadCompany(e.target.value)}
+                  required
+                  placeholder="Acme Inc."
+                  className="focus:ring-salesforce-blue"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="edit-lead-email" className="text-sm font-medium leading-none">
+                  Email
+                </label>
+                <Input
+                  id="edit-lead-email"
+                  type="email"
+                  value={editLeadEmail}
+                  onChange={(e) => setEditLeadEmail(e.target.value)}
+                  required
+                  placeholder="john.doe@acme.com"
+                  className="focus:ring-salesforce-blue"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="edit-lead-status" className="text-sm font-medium leading-none">
+                  Status
+                </label>
+                <select
+                  id="edit-lead-status"
+                  value={editLeadStatus}
+                  onChange={(e) => setEditLeadStatus(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-salesforce-blue focus-visible:ring-offset-2"
+                >
+                  <option value="Open - Not Contacted">Open - Not Contacted</option>
+                  <option value="Working - Contacted">Working - Contacted</option>
+                  <option value="Closed - Converted">Closed - Converted</option>
+                  <option value="Closed - Not Converted">Closed - Not Converted</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label htmlFor="edit-sync-lead-toggle" className="block text-sm font-medium text-gray-700 mb-1">
+                    Sync to Raintree Systems
+                  </label>
+                  <p className="text-xs text-gray-500">
+                    Update in Raintree Salesforce as well
+                  </p>
+                  {editSyncLeadToRaintree && !editingLead?.raintreeLeadId && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      ⚠️ This lead was not synced to Raintree when created. Update will only apply to Partner Salesforce.
+                    </p>
+                  )}
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    id="edit-sync-lead-toggle"
+                    type="checkbox"
+                    checked={editSyncLeadToRaintree}
+                    onChange={(e) => setEditSyncLeadToRaintree(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-salesforce-blue/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-salesforce-blue"></div>
+                </label>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditLeadModal(false)
+                    setEditingLead(null)
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="flex-1 bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <span>Updating...</span>
+                    </>
+                  ) : (
+                    'Update Lead'
                   )}
                 </Button>
               </div>

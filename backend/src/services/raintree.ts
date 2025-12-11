@@ -110,6 +110,68 @@ export class RaintreeSalesforceService {
   }
 
   /**
+   * Create a Lead in Raintree Salesforce
+   */
+  static async createLead(leadData: {
+    FirstName: string
+    LastName: string
+    Company: string
+    Email: string
+    Status: string
+    Phone?: string
+    Title?: string
+  }): Promise<string> {
+    try {
+      console.log('📝 Creating lead in Raintree Salesforce:', `${leadData.FirstName} ${leadData.LastName}`)
+      const service = await this.getService()
+      const leadId = await service.createLead(leadData)
+      console.log('✅ Lead created in Raintree Salesforce with ID:', leadId)
+      return leadId
+    } catch (error: any) {
+      console.error('❌ Error creating lead in Raintree Salesforce:', error.message)
+      throw new Error(`Failed to create lead in Raintree Salesforce: ${error.message}`)
+    }
+  }
+
+  /**
+   * Update a Lead in Raintree Salesforce
+   */
+  static async updateLead(leadId: string, leadData: Partial<{
+    FirstName: string
+    LastName: string
+    Company: string
+    Email: string
+    Status: string
+    Phone?: string
+    Title?: string
+  }>): Promise<void> {
+    try {
+      console.log('📝 Updating lead in Raintree Salesforce:', leadId)
+      const service = await this.getService()
+      await service.updateLead(leadId, leadData)
+      console.log('✅ Lead updated in Raintree Salesforce:', leadId)
+    } catch (error: any) {
+      console.error('❌ Error updating lead in Raintree Salesforce:', error.message)
+      throw new Error(`Failed to update lead in Raintree Salesforce: ${error.message}`)
+    }
+  }
+
+  /**
+   * Delete a Lead from Raintree Salesforce
+   */
+  static async deleteLead(leadId: string): Promise<void> {
+    try {
+      console.log('🗑️  Deleting lead from Raintree Salesforce:', leadId)
+      const service = await this.getService()
+      await service.deleteLead(leadId)
+      console.log('✅ Lead deleted from Raintree Salesforce:', leadId)
+    } catch (error: any) {
+      console.error('❌ Error deleting lead from Raintree Salesforce:', error.message)
+      throw new Error(`Failed to delete lead from Raintree Salesforce: ${error.message}`)
+    }
+  }
+
+  /**
    * Test Raintree Salesforce connection
    */
   static async testConnection(): Promise<{ success: boolean; message: string }> {

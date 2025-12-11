@@ -271,25 +271,194 @@ class SalesforceAPI {
   }
 
   /**
-   * Create a Lead in Salesforce (placeholder for future implementation)
+   * Create a Lead in Salesforce via backend API
    */
-  async createLead(leadData: {
-    FirstName: string
-    LastName: string
-    Company: string
-    Email: string
-    Status: string
-  }): Promise<string> {
-    // TODO: Implement lead creation endpoint in backend
-    throw new Error('Lead creation not yet implemented in backend')
+  async createLead(
+    leadData: {
+      FirstName: string
+      LastName: string
+      Company: string
+      Email: string
+      Status: string
+      Phone?: string
+      Title?: string
+    },
+    syncToRaintree: boolean = false
+  ): Promise<string> {
+    try {
+      const credentials = this.getPartnerCredentials()
+
+      const response = await fetch(`${API_BASE_URL}/api/leads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          lead: leadData,
+          partnerCredentials: credentials,
+          syncToRaintree: syncToRaintree
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to create lead')
+      }
+
+      const data = await response.json()
+      
+      // Check for Raintree sync errors
+      if (data.data?.errors && data.data.errors.length > 0) {
+        console.warn('⚠️ Raintree sync errors:', data.data.errors)
+        if (data.data.errors.length > 0) {
+          const raintreeError = data.data.errors.find((e: string) => e.includes('Raintree'))
+          if (raintreeError) {
+            throw new Error(`Partner lead created, but ${raintreeError}`)
+          }
+        }
+      }
+      
+      // Return partner Salesforce ID (primary)
+      if (data.data?.partnerSalesforceId) {
+        return data.data.partnerSalesforceId
+      }
+
+      throw new Error('No lead ID returned from server')
+    } catch (error: any) {
+      console.error('Error creating lead:', error)
+      throw error
+    }
   }
 
   /**
-   * Get all Leads from Salesforce (placeholder for future implementation)
+   * Get all Leads from Salesforce via backend API
    */
   async getLeads(): Promise<any[]> {
-    // TODO: Implement lead fetching endpoint in backend
-    return []
+    try {
+      const credentials = this.getPartnerCredentials()
+
+      const params = new URLSearchParams({
+        email: credentials.email,
+        password: credentials.password,
+        securityToken: credentials.securityToken
+      })
+
+      const response = await fetch(`${API_BASE_URL}/api/leads?${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to fetch leads')
+      }
+
+      const data = await response.json()
+      return data.data || []
+    } catch (error: any) {
+      console.error('Error fetching leads:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update a Lead in Salesforce via backend API
+   */
+  async updateLead(
+    leadId: string,
+    leadData: Partial<{
+      FirstName: string
+      LastName: string
+      Company: string
+      Email: string
+      Status: string
+      Phone?: string
+      Title?: string
+    }>,
+    syncToRaintree: boolean = false,
+    raintreeLeadId?: string
+  ): Promise<void> {
+    try {
+      const credentials = this.getPartnerCredentials()
+
+      const response = await fetch(`${API_BASE_URL}/api/leads/${leadId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          lead: leadData,
+          partnerCredentials: credentials,
+          syncToRaintree: syncToRaintree,
+          raintreeLeadId: raintreeLeadId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to update lead')
+      }
+
+      const data = await response.json()
+      
+      // Check for Raintree sync errors
+      if (data.data?.errors && data.data.errors.length > 0) {
+        console.warn('⚠️ Raintree sync errors:', data.data.errors)
+        const raintreeError = data.data.errors.find((e: string) => e.includes('Raintree'))
+        if (raintreeError) {
+          throw new Error(`Partner lead updated, but ${raintreeError}`)
+        }
+      }
+    } catch (error: any) {
+      console.error('Error updating lead:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete a Lead from Salesforce via backend API
+   */
+  async deleteLead(
+    leadId: string,
+    syncToRaintree: boolean = false,
+    raintreeLeadId?: string
+  ): Promise<void> {
+    try {
+      const credentials = this.getPartnerCredentials()
+
+      const response = await fetch(`${API_BASE_URL}/api/leads/${leadId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          partnerCredentials: credentials,
+          syncToRaintree: syncToRaintree,
+          raintreeLeadId: raintreeLeadId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to delete lead')
+      }
+
+      const data = await response.json()
+      
+      // Check for Raintree sync errors
+      if (data.data?.errors && data.data.errors.length > 0) {
+        console.warn('⚠️ Raintree sync errors:', data.data.errors)
+        const raintreeError = data.data.errors.find((e: string) => e.includes('Raintree'))
+        if (raintreeError) {
+          throw new Error(`Partner lead deleted, but ${raintreeError}`)
+        }
+      }
+    } catch (error: any) {
+      console.error('Error deleting lead:', error)
+      throw error
+    }
   }
 
   /**

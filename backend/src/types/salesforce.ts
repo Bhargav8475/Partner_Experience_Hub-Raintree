@@ -50,3 +50,47 @@ export interface DeleteOpportunityRequest {
   raintreeOpportunityId?: string
 }
 
+export interface LeadData {
+  FirstName: string
+  LastName: string
+  Company: string
+  Email: string
+  Status: string
+  Phone?: string
+  Title?: string
+}
+
+export interface SalesforceLead {
+  Id: string
+  FirstName?: string
+  LastName?: string
+  Company?: string
+  Email?: string
+  Status?: string
+  Phone?: string
+  Title?: string
+  CreatedDate?: string
+  LastModifiedDate?: string
+}
+
+export interface CreateLeadRequest {
+  lead: LeadData
+  partnerCredentials: SalesforceCredentials
+  syncToRaintree?: boolean
+}
+
+export interface UpdateLeadRequest {
+  leadId: string
+  lead: Partial<LeadData>
+  partnerCredentials: SalesforceCredentials
+  syncToRaintree?: boolean
+  raintreeLeadId?: string
+}
+
+export interface DeleteLeadRequest {
+  leadId: string
+  partnerCredentials: SalesforceCredentials
+  syncToRaintree?: boolean
+  raintreeLeadId?: string
+}
+

@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import opportunitiesRouter from './routes/opportunities.js'
+import leadsRouter from './routes/leads.js'
 import authRouter from './routes/auth.js'
 
 // Load environment variables
@@ -50,6 +51,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/opportunities', opportunitiesRouter)
+app.use('/api/leads', leadsRouter)
 app.use('/api/auth', authRouter)
 
 // Debug endpoint to test Raintree Salesforce connection
@@ -121,6 +123,10 @@ app.listen(PORT, () => {
   console.log(`   GET    /api/opportunities - Get opportunities`)
   console.log(`   PUT    /api/opportunities/:id - Update opportunity`)
   console.log(`   DELETE /api/opportunities/:id - Delete opportunity`)
+  console.log(`   POST   /api/leads - Create lead`)
+  console.log(`   GET    /api/leads - Get leads`)
+  console.log(`   PUT    /api/leads/:id - Update lead`)
+  console.log(`   DELETE /api/leads/:id - Delete lead`)
   console.log(`   POST   /api/auth/raintree - Pre-authenticate Raintree Salesforce`)
   console.log(`   GET    /api/auth/raintree/status - Check Raintree authentication status`)
   console.log(`   GET    /api/debug/raintree - Test Raintree Salesforce connection`)

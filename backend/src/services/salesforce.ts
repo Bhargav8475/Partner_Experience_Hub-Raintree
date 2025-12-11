@@ -261,6 +261,186 @@ export class SalesforceService {
   }
 
   /**
+   * Create a Lead in Salesforce
+   */
+  async createLead(leadData: {
+    FirstName: string
+    LastName: string
+    Company: string
+    Email: string
+    Status: string
+    Phone?: string
+    Title?: string
+  }): Promise<string> {
+    try {
+      const client = this.getAuthenticatedClient()
+      const apiVersion = process.env.SALESFORCE_API_VERSION || 'v58.0'
+      
+      const response = await client.post<{ id: string; success: boolean; errors: string[] }>(
+        `/services/data/${apiVersion}/sobjects/Lead`,
+        leadData
+      )
+
+      if (!response.data.success) {
+        throw new Error(`Failed to create lead: ${response.data.errors?.join(', ') || 'Unknown error'}`)
+      }
+
+      return response.data.id
+    } catch (error: any) {
+      if (error.response) {
+        const errorMessage = error.response.data?.[0]?.message || 
+                           error.response.data?.message || 
+                           'Failed to create lead'
+        throw new Error(`Salesforce API error: ${errorMessage}`)
+      }
+      throw new Error(`Failed to create lead: ${error.message}`)
+    }
+  }
+
+  /**
+   * Get all Leads from Salesforce
+   */
+  async getLeads(): Promise<any[]> {
+    try {
+      const client = this.getAuthenticatedClient()
+      const apiVersion = process.env.SALESFORCE_API_VERSION || 'v58.0'
+      
+      const query = `SELECT Id, FirstName, LastName, Company, Email, Status, Phone, Title, CreatedDate, LastModifiedDate FROM Lead ORDER BY CreatedDate DESC LIMIT 100`
+      
+      const response = await client.get<{
+        totalSize: number
+        done: boolean
+        records: any[]
+      }>(`/services/data/${apiVersion}/query`, {
+        params: { q: query }
+      })
+
+      return response.data.records
+    } catch (error: any) {
+      if (error.response) {
+        const errorMessage = error.response.data?.[0]?.message || 
+                           error.response.data?.message || 
+                           'Failed to fetch leads'
+        throw new Error(`Salesforce API error: ${errorMessage}`)
+      }
+      throw new Error(`Failed to fetch leads: ${error.message}`)
+    }
+  }
+
+  /**
+   * Update a Lead in Salesforce
+   */
+  async updateLead(leadId: string, leadData: Partial<{
+    FirstName: string
+    LastName: string
+    Company: string
+    Email: string
+    Status: string
+    Phone?: string
+    Title?: string
+  }>): Promise<void> {
+    try {
+      const client = this.getAuthenticatedClient()
+      const apiVersion = process.env.SALESFORCE_API_VERSION || 'v58.0'
+      
+      // Filter out undefined/null values and build clean update object
+      const cleanData: any = {}
+      if (leadData.FirstName !== undefined && leadData.FirstName !== null) {
+        cleanData.FirstName = leadData.FirstName
+      }
+      if (leadData.LastName !== undefined && leadData.LastName !== null) {
+        cleanData.LastName = leadData.LastName
+      }
+      if (leadData.Company !== undefined && leadData.Company !== null) {
+        cleanData.Company = leadData.Company
+      }
+      if (leadData.Email !== undefined && leadData.Email !== null) {
+        cleanData.Email = leadData.Email
+      }
+      if (leadData.Status !== undefined && leadData.Status !== null) {
+        cleanData.Status = leadData.Status
+      }
+      if (leadData.Phone !== undefined && leadData.Phone !== null) {
+        cleanData.Phone = leadData.Phone
+      }
+      if (leadData.Title !== undefined && leadData.Title !== null) {
+        cleanData.Title = leadData.Title
+      }
+
+      console.log('📝 Updating lead in Salesforce:', {
+        leadId,
+        updateData: cleanData
+      })
+
+      const response = await client.patch(
+        `/services/data/${apiVersion}/sobjects/Lead/${leadId}`,
+        cleanData
+      )
+
+      // Salesforce PATCH returns 204 No Content on success
+      if (response.status === 204 || response.status === 200) {
+        console.log('✅ Lead updated successfully in Salesforce:', leadId)
+        return
+      }
+      
+      throw new Error(`Unexpected response status: ${response.status}`)
+    } catch (error: any) {
+      if (error.response) {
+        const errorData = error.response.data
+        let errorMessage = 'Failed to update lead'
+        
+        if (Array.isArray(errorData)) {
+          errorMessage = errorData.map((err: any) => err.message || err.errorCode || 'Unknown error').join(', ')
+        } else if (errorData?.message) {
+          errorMessage = errorData.message
+        } else if (errorData?.error_description) {
+          errorMessage = errorData.error_description
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData
+        } else if (errorData && Object.keys(errorData).length > 0) {
+          errorMessage = JSON.stringify(errorData)
+        }
+        
+        console.error('❌ Salesforce update error:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: errorData,
+          leadId,
+          leadData
+        })
+        
+        throw new Error(`Salesforce API error: ${errorMessage}`)
+      }
+      console.error('❌ Update error (no response):', error.message)
+      throw new Error(`Failed to update lead: ${error.message}`)
+    }
+  }
+
+  /**
+   * Delete a Lead from Salesforce
+   */
+  async deleteLead(leadId: string): Promise<void> {
+    try {
+      const client = this.getAuthenticatedClient()
+      const apiVersion = process.env.SALESFORCE_API_VERSION || 'v58.0'
+      
+      const response = await client.delete(`/services/data/${apiVersion}/sobjects/Lead/${leadId}`)
+
+      if (response.status !== 204) {
+        throw new Error('Failed to delete lead: Unexpected response status')
+      }
+    } catch (error: any) {
+      if (error.response) {
+        const errorMessage = error.response.data?.[0]?.message || 
+                           error.response.data?.message || 
+                           'Failed to delete lead'
+        throw new Error(`Salesforce API error: ${errorMessage}`)
+      }
+      throw new Error(`Failed to delete lead: ${error.message}`)
+    }
+  }
+
+  /**
    * Create a new instance with different credentials
    */
   static async createWithCredentials(credentials: SalesforceCredentials): Promise<SalesforceService> {
