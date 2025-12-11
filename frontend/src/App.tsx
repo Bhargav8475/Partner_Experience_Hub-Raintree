@@ -264,6 +264,11 @@ function App() {
 
   // Handle Opportunity Edit
   const handleEditOpportunity = (opp: Opportunity) => {
+    // Only allow editing if synced
+    if (!opp.synced) {
+      setError('Only opportunities synced to Raintree can be edited')
+      return
+    }
     setEditingOpportunity(opp)
     setEditOppName(opp.name)
     setEditOppStage(opp.stage)
@@ -328,6 +333,12 @@ function App() {
 
   // Handle Opportunity Delete
   const handleDeleteOpportunity = async (opp: Opportunity) => {
+    // Only allow deleting if synced
+    if (!opp.synced) {
+      setError('Only opportunities synced to Raintree can be deleted')
+      return
+    }
+    
     if (!confirm(`Are you sure you want to delete "${opp.name}"? This action cannot be undone.`)) {
       return
     }
@@ -770,7 +781,9 @@ function App() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleEditOpportunity(opp)}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                disabled={!opp.synced || isUpdating}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!opp.synced ? "Only synced opportunities can be edited" : "Edit opportunity"}
                               >
                                 <Edit className="w-4 h-4 mr-1" />
                                 Edit
@@ -779,8 +792,9 @@ function App() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleDeleteOpportunity(opp)}
-                                disabled={isDeleting === opp.id}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                disabled={!opp.synced || isDeleting === opp.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!opp.synced ? "Only synced opportunities can be deleted" : "Delete opportunity"}
                               >
                                 {isDeleting === opp.id ? (
                                   <Loader2 className="w-4 h-4 mr-1 animate-spin" />
