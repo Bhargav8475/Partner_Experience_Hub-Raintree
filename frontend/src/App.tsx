@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Cloud, Lock, CheckCircle, X, Loader2, Building2, Calendar, DollarSign, TrendingUp, Users, Briefcase, LogOut, AlertCircle } from 'lucide-react'
+import { Cloud, Lock, CheckCircle, X, Loader2, Building2, Calendar, DollarSign, TrendingUp, Users, Briefcase, LogOut, AlertCircle, Edit, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,6 +14,7 @@ interface Opportunity {
   amount: number
   closeDate: string
   synced: boolean
+  raintreeOpportunityId?: string // ID of the opportunity in Raintree Salesforce (if synced)
 }
 
 interface Lead {
@@ -38,6 +39,8 @@ function App() {
   const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false)
   const [showSuccess, setShowSuccess] = useState<boolean>(false)
   const [showOpportunityModal, setShowOpportunityModal] = useState<boolean>(false)
+  const [showEditOpportunityModal, setShowEditOpportunityModal] = useState<boolean>(false)
+  const [editingOpportunity, setEditingOpportunity] = useState<Opportunity | null>(null)
   const [showLeadModal, setShowLeadModal] = useState<boolean>(false)
   const [activeSection, setActiveSection] = useState<'opportunities' | 'leads'>('opportunities')
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
@@ -45,6 +48,8 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState<boolean>(false)
+  const [isUpdating, setIsUpdating] = useState<boolean>(false)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
   
   // Opportunity form state
   const [oppName, setOppName] = useState<string>('')
@@ -52,6 +57,13 @@ function App() {
   const [oppAmount, setOppAmount] = useState<string>('')
   const [oppCloseDate, setOppCloseDate] = useState<string>('')
   const [syncToRaintree, setSyncToRaintree] = useState<boolean>(false)
+  
+  // Edit opportunity form state
+  const [editOppName, setEditOppName] = useState<string>('')
+  const [editOppStage, setEditOppStage] = useState<string>('Prospecting')
+  const [editOppAmount, setEditOppAmount] = useState<string>('')
+  const [editOppCloseDate, setEditOppCloseDate] = useState<string>('')
+  const [editSyncToRaintree, setEditSyncToRaintree] = useState<boolean>(false)
 
   // Lead form state
   const [leadFirstName, setLeadFirstName] = useState<string>('')
@@ -104,15 +116,33 @@ function App() {
         salesforceAPI.getLeads()
       ])
 
+      // Load opportunity mappings from localStorage
+      const mappings = JSON.parse(localStorage.getItem('opportunity_mappings') || '{}')
+      console.log('📋 Loaded opportunity mappings from localStorage:', mappings)
+      
       // Transform Salesforce opportunities to our format
-      const transformedOpps: Opportunity[] = sfOpportunities.map((opp: any) => ({
-        id: opp.Id,
-        name: opp.Name,
-        stage: opp.StageName,
-        amount: opp.Amount || 0,
-        closeDate: opp.CloseDate,
-        synced: true
-      }))
+      const transformedOpps: Opportunity[] = sfOpportunities.map((opp: any) => {
+        const raintreeId = mappings[opp.Id] // Check if we have a mapping for this opportunity
+        if (raintreeId) {
+          console.log(`✅ Found Raintree mapping for opportunity ${opp.Id}: ${raintreeId}`)
+        }
+        return {
+          id: opp.Id,
+          name: opp.Name,
+          stage: opp.StageName,
+          amount: opp.Amount || 0,
+          closeDate: opp.CloseDate,
+          synced: !!raintreeId, // Set synced to true only if we have a Raintree ID
+          raintreeOpportunityId: raintreeId
+        }
+      })
+      
+      console.log('📊 Transformed opportunities:', transformedOpps.map(opp => ({
+        id: opp.id,
+        name: opp.name,
+        synced: opp.synced,
+        raintreeId: opp.raintreeOpportunityId
+      })))
 
       // Transform Salesforce leads to our format
       const transformedLeads: Lead[] = sfLeads.map((lead: any) => ({
@@ -150,12 +180,60 @@ function App() {
 
     try {
       // Always sync to Salesforce (the toggle is for Raintree sync)
-      const salesforceId = await salesforceAPI.createOpportunity({
-        Name: oppName,
-        StageName: oppStage,
-        Amount: parseFloat(oppAmount) || 0,
-        CloseDate: oppCloseDate
-      }, syncToRaintree)
+      // Get the full response to check for Raintree ID
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+      const credentials = {
+        email: localStorage.getItem('salesforce_username') || '',
+        password: localStorage.getItem('salesforce_password') || '',
+        securityToken: localStorage.getItem('salesforce_token') || ''
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/opportunities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          opportunity: {
+            Name: oppName,
+            StageName: oppStage,
+            Amount: parseFloat(oppAmount) || 0,
+            CloseDate: oppCloseDate
+          },
+          partnerCredentials: credentials,
+          syncToRaintree: syncToRaintree
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to create opportunity')
+      }
+
+      const responseData = await response.json()
+      const salesforceId = responseData.data?.partnerSalesforceId
+
+      if (!salesforceId) {
+        throw new Error('No opportunity ID returned from server')
+      }
+
+      const raintreeId = responseData.data?.raintreeSalesforceId
+      
+      console.log('📦 Create opportunity response:', {
+        salesforceId,
+        raintreeId,
+        syncToRaintree,
+        fullResponse: responseData
+      })
+      
+      // Store the mapping in localStorage for persistence
+      if (raintreeId) {
+        const mappings = JSON.parse(localStorage.getItem('opportunity_mappings') || '{}')
+        mappings[salesforceId] = raintreeId
+        localStorage.setItem('opportunity_mappings', JSON.stringify(mappings))
+        console.log('💾 Stored opportunity mapping:', { partnerId: salesforceId, raintreeId })
+      } else if (syncToRaintree) {
+        console.warn('⚠️ Raintree sync was enabled but no raintreeSalesforceId was returned')
+        console.warn('   Response data:', responseData.data)
+      }
 
       const newOpportunity: Opportunity = {
         id: salesforceId,
@@ -163,7 +241,8 @@ function App() {
         stage: oppStage,
         amount: parseFloat(oppAmount) || 0,
         closeDate: oppCloseDate,
-        synced: syncToRaintree // This indicates if synced to Raintree
+        synced: syncToRaintree,
+        raintreeOpportunityId: raintreeId
       }
 
       setOpportunities([...opportunities, newOpportunity])
@@ -180,6 +259,96 @@ function App() {
       console.error('Error creating opportunity:', err)
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  // Handle Opportunity Edit
+  const handleEditOpportunity = (opp: Opportunity) => {
+    setEditingOpportunity(opp)
+    setEditOppName(opp.name)
+    setEditOppStage(opp.stage)
+    setEditOppAmount(opp.amount.toString())
+    setEditOppCloseDate(opp.closeDate)
+    setEditSyncToRaintree(opp.synced || false)
+    setShowEditOpportunityModal(true)
+  }
+
+  // Handle Opportunity Update
+  const handleUpdateOpportunity = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingOpportunity) return
+
+    setIsUpdating(true)
+    setError(null)
+
+    try {
+      await salesforceAPI.updateOpportunity(
+        editingOpportunity.id,
+        {
+          Name: editOppName,
+          StageName: editOppStage,
+          Amount: parseFloat(editOppAmount) || 0,
+          CloseDate: editOppCloseDate
+        },
+        editSyncToRaintree,
+        editingOpportunity.raintreeOpportunityId
+      )
+
+      // Update the opportunity in the list
+      const updatedOpportunity = {
+        ...editingOpportunity,
+        name: editOppName,
+        stage: editOppStage,
+        amount: parseFloat(editOppAmount) || 0,
+        closeDate: editOppCloseDate,
+        synced: editSyncToRaintree,
+        // Preserve raintreeOpportunityId if it exists
+        raintreeOpportunityId: editingOpportunity.raintreeOpportunityId
+      }
+      
+      setOpportunities(opportunities.map(opp => 
+        opp.id === editingOpportunity.id ? updatedOpportunity : opp
+      ))
+
+      // Reset form and close modal
+      setEditingOpportunity(null)
+      setEditOppName('')
+      setEditOppStage('Prospecting')
+      setEditOppAmount('')
+      setEditOppCloseDate('')
+      setEditSyncToRaintree(false)
+      setShowEditOpportunityModal(false)
+    } catch (err: any) {
+      setError(err.message || 'Failed to update opportunity')
+      console.error('Error updating opportunity:', err)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  // Handle Opportunity Delete
+  const handleDeleteOpportunity = async (opp: Opportunity) => {
+    if (!confirm(`Are you sure you want to delete "${opp.name}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setIsDeleting(opp.id)
+    setError(null)
+
+    try {
+      await salesforceAPI.deleteOpportunity(
+        opp.id,
+        opp.synced || false,
+        opp.raintreeOpportunityId
+      )
+
+      // Remove the opportunity from the list
+      setOpportunities(opportunities.filter(o => o.id !== opp.id))
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete opportunity')
+      console.error('Error deleting opportunity:', err)
+    } finally {
+      setIsDeleting(null)
     }
   }
 
@@ -521,22 +690,37 @@ function App() {
                         : 'Manage your leads and prospects'}
                     </p>
                   </div>
-                  <Button
-                    onClick={() => activeSection === 'opportunities' ? setShowOpportunityModal(true) : setShowLeadModal(true)}
-                    className="bg-salesforce-blue hover:bg-[#0088C7] text-white"
-                  >
-                    {activeSection === 'opportunities' ? (
-                      <>
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      onClick={loadSalesforceData}
+                      disabled={isLoading}
+                      variant="outline"
+                      className="text-gray-700 hover:bg-gray-100"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
                         <TrendingUp className="w-4 h-4 mr-2" />
-                        <span>New Opportunity</span>
-                      </>
-                    ) : (
-                      <>
-                        <Users className="w-4 h-4 mr-2" />
-                        <span>New Lead</span>
-                      </>
-                    )}
-                  </Button>
+                      )}
+                      <span>Refresh</span>
+                    </Button>
+                    <Button
+                      onClick={() => activeSection === 'opportunities' ? setShowOpportunityModal(true) : setShowLeadModal(true)}
+                      className="bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                    >
+                      {activeSection === 'opportunities' ? (
+                        <>
+                          <TrendingUp className="w-4 h-4 mr-2" />
+                          <span>New Opportunity</span>
+                        </>
+                      ) : (
+                        <>
+                          <Users className="w-4 h-4 mr-2" />
+                          <span>New Lead</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -580,6 +764,31 @@ function App() {
                                   <span>{new Date(opp.closeDate).toLocaleDateString()}</span>
                                 </div>
                               </div>
+                            </div>
+                            <div className="flex items-center space-x-2 ml-4">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditOpportunity(opp)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteOpportunity(opp)}
+                                disabled={isDeleting === opp.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                {isDeleting === opp.id ? (
+                                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                )}
+                                Delete
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -885,6 +1094,150 @@ function App() {
                     </>
                   ) : (
                     'Create Opportunity'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Opportunity Modal */}
+      {showEditOpportunityModal && editingOpportunity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setShowEditOpportunityModal(false)
+                setEditingOpportunity(null)
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Edit Opportunity
+              </h2>
+              <p className="text-gray-600">
+                Update the opportunity details
+              </p>
+            </div>
+
+            <form onSubmit={handleUpdateOpportunity} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="edit-opp-name" className="text-sm font-medium leading-none">
+                  Opportunity Name
+                </label>
+                <Input
+                  id="edit-opp-name"
+                  type="text"
+                  value={editOppName}
+                  onChange={(e) => setEditOppName(e.target.value)}
+                  required
+                  placeholder="e.g., Q4 Enterprise Deal"
+                  className="focus:ring-salesforce-blue"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="edit-opp-stage" className="text-sm font-medium leading-none">
+                  Stage
+                </label>
+                <select
+                  id="edit-opp-stage"
+                  value={editOppStage}
+                  onChange={(e) => setEditOppStage(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-salesforce-blue focus-visible:ring-offset-2"
+                >
+                  <option value="Prospecting">Prospecting</option>
+                  <option value="Qualification">Qualification</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="edit-opp-amount" className="text-sm font-medium leading-none">
+                  Amount ($)
+                </label>
+                <Input
+                  id="edit-opp-amount"
+                  type="number"
+                  value={editOppAmount}
+                  onChange={(e) => setEditOppAmount(e.target.value)}
+                  required
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="focus:ring-salesforce-blue"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="edit-opp-date" className="text-sm font-medium leading-none">
+                  Close Date
+                </label>
+                <Input
+                  id="edit-opp-date"
+                  type="date"
+                  value={editOppCloseDate}
+                  onChange={(e) => setEditOppCloseDate(e.target.value)}
+                  required
+                  className="focus:ring-salesforce-blue"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label htmlFor="edit-sync-toggle" className="block text-sm font-medium text-gray-700 mb-1">
+                    Sync to Raintree Systems
+                  </label>
+                  <p className="text-xs text-gray-500">
+                    Update in Raintree Salesforce as well
+                  </p>
+                  {editSyncToRaintree && !editingOpportunity?.raintreeOpportunityId && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      ⚠️ This opportunity was not synced to Raintree when created. Update will only apply to Partner Salesforce.
+                    </p>
+                  )}
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    id="edit-sync-toggle"
+                    type="checkbox"
+                    checked={editSyncToRaintree}
+                    onChange={(e) => setEditSyncToRaintree(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-salesforce-blue/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-salesforce-blue"></div>
+                </label>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditOpportunityModal(false)
+                    setEditingOpportunity(null)
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="flex-1 bg-salesforce-blue hover:bg-[#0088C7] text-white"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <span>Updating...</span>
+                    </>
+                  ) : (
+                    'Update Opportunity'
                   )}
                 </Button>
               </div>

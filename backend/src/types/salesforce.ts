@@ -36,3 +36,17 @@ export interface CreateOpportunityRequest {
   syncToRaintree?: boolean
 }
 
+export interface UpdateOpportunityRequest {
+  opportunityId: string
+  opportunity: Partial<OpportunityData>
+  partnerCredentials: SalesforceCredentials
+  syncToRaintree?: boolean
+}
+
+export interface DeleteOpportunityRequest {
+  opportunityId: string
+  partnerCredentials: SalesforceCredentials
+  syncToRaintree?: boolean
+  raintreeOpportunityId?: string
+}
+

@@ -85,9 +85,11 @@ frontend/
 ## Key Features
 
 - ✅ Real-time Salesforce integration via backend API
+- ✅ Full CRUD operations (Create, Read, Update, Delete) for opportunities
 - ✅ Partner Salesforce credential management
 - ✅ Automatic Raintree Salesforce sync
-- ✅ Opportunity creation and retrieval
+- ✅ Bidirectional sync - changes in UI sync to Salesforce, refresh to see Salesforce changes
+- ✅ Edit and delete opportunities with Raintree sync support
 - ✅ Progress bar showing onboarding steps
 - ✅ Salesforce authentication modal with loading states
 - ✅ Responsive design
@@ -101,6 +103,8 @@ The frontend communicates with the backend API at `http://localhost:3001` (confi
 
 - `POST /api/opportunities` - Create opportunity
 - `GET /api/opportunities` - Get opportunities
+- `PUT /api/opportunities/:id` - Update opportunity
+- `DELETE /api/opportunities/:id` - Delete opportunity
 - `POST /api/auth/raintree` - Pre-authenticate Raintree Salesforce
 
 See `../backend/README.md` for detailed API documentation.

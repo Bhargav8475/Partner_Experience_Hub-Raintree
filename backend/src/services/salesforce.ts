@@ -162,6 +162,105 @@ export class SalesforceService {
   }
 
   /**
+   * Update an Opportunity in Salesforce
+   */
+  async updateOpportunity(opportunityId: string, opportunityData: Partial<OpportunityData>): Promise<void> {
+    try {
+      const client = this.getAuthenticatedClient()
+      const apiVersion = process.env.SALESFORCE_API_VERSION || 'v58.0'
+      
+      // Filter out undefined/null values and build clean update object
+      const cleanData: any = {}
+      if (opportunityData.Name !== undefined && opportunityData.Name !== null) {
+        cleanData.Name = opportunityData.Name
+      }
+      if (opportunityData.StageName !== undefined && opportunityData.StageName !== null) {
+        cleanData.StageName = opportunityData.StageName
+      }
+      if (opportunityData.Amount !== undefined && opportunityData.Amount !== null) {
+        cleanData.Amount = opportunityData.Amount
+      }
+      if (opportunityData.CloseDate !== undefined && opportunityData.CloseDate !== null) {
+        cleanData.CloseDate = opportunityData.CloseDate
+      }
+
+      console.log('📝 Updating opportunity in Salesforce:', {
+        opportunityId,
+        updateData: cleanData
+      })
+
+      const response = await client.patch(
+        `/services/data/${apiVersion}/sobjects/Opportunity/${opportunityId}`,
+        cleanData
+      )
+
+      // Salesforce PATCH returns 204 No Content on success
+      // If we get here without an error, the update was successful
+      if (response.status === 204 || response.status === 200) {
+        console.log('✅ Opportunity updated successfully in Salesforce:', opportunityId)
+        return
+      }
+      
+      throw new Error(`Unexpected response status: ${response.status}`)
+    } catch (error: any) {
+      if (error.response) {
+        // Handle Salesforce error response
+        const errorData = error.response.data
+        let errorMessage = 'Failed to update opportunity'
+        
+        if (Array.isArray(errorData)) {
+          // Salesforce returns errors as an array
+          errorMessage = errorData.map((err: any) => err.message || err.errorCode || 'Unknown error').join(', ')
+        } else if (errorData?.message) {
+          errorMessage = errorData.message
+        } else if (errorData?.error_description) {
+          errorMessage = errorData.error_description
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData
+        } else if (errorData && Object.keys(errorData).length > 0) {
+          errorMessage = JSON.stringify(errorData)
+        }
+        
+        console.error('❌ Salesforce update error:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: errorData,
+          opportunityId,
+          opportunityData
+        })
+        
+        throw new Error(`Salesforce API error: ${errorMessage}`)
+      }
+      console.error('❌ Update error (no response):', error.message)
+      throw new Error(`Failed to update opportunity: ${error.message}`)
+    }
+  }
+
+  /**
+   * Delete an Opportunity from Salesforce
+   */
+  async deleteOpportunity(opportunityId: string): Promise<void> {
+    try {
+      const client = this.getAuthenticatedClient()
+      const apiVersion = process.env.SALESFORCE_API_VERSION || 'v58.0'
+      
+      const response = await client.delete(`/services/data/${apiVersion}/sobjects/Opportunity/${opportunityId}`)
+
+      if (response.status !== 204) {
+        throw new Error('Failed to delete opportunity: Unexpected response status')
+      }
+    } catch (error: any) {
+      if (error.response) {
+        const errorMessage = error.response.data?.[0]?.message || 
+                           error.response.data?.message || 
+                           'Failed to delete opportunity'
+        throw new Error(`Salesforce API error: ${errorMessage}`)
+      }
+      throw new Error(`Failed to delete opportunity: ${error.message}`)
+    }
+  }
+
+  /**
    * Create a new instance with different credentials
    */
   static async createWithCredentials(credentials: SalesforceCredentials): Promise<SalesforceService> {

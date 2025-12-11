@@ -80,6 +80,36 @@ export class RaintreeSalesforceService {
   }
 
   /**
+   * Update an Opportunity in Raintree Salesforce
+   */
+  static async updateOpportunity(opportunityId: string, opportunityData: Partial<OpportunityData>): Promise<void> {
+    try {
+      console.log('📝 Updating opportunity in Raintree Salesforce:', opportunityId)
+      const service = await this.getService()
+      await service.updateOpportunity(opportunityId, opportunityData)
+      console.log('✅ Opportunity updated in Raintree Salesforce:', opportunityId)
+    } catch (error: any) {
+      console.error('❌ Error updating opportunity in Raintree Salesforce:', error.message)
+      throw new Error(`Failed to update opportunity in Raintree Salesforce: ${error.message}`)
+    }
+  }
+
+  /**
+   * Delete an Opportunity from Raintree Salesforce
+   */
+  static async deleteOpportunity(opportunityId: string): Promise<void> {
+    try {
+      console.log('🗑️  Deleting opportunity from Raintree Salesforce:', opportunityId)
+      const service = await this.getService()
+      await service.deleteOpportunity(opportunityId)
+      console.log('✅ Opportunity deleted from Raintree Salesforce:', opportunityId)
+    } catch (error: any) {
+      console.error('❌ Error deleting opportunity from Raintree Salesforce:', error.message)
+      throw new Error(`Failed to delete opportunity from Raintree Salesforce: ${error.message}`)
+    }
+  }
+
+  /**
    * Test Raintree Salesforce connection
    */
   static async testConnection(): Promise<{ success: boolean; message: string }> {

@@ -181,6 +181,96 @@ class SalesforceAPI {
   }
 
   /**
+   * Update an Opportunity in Salesforce via backend API
+   */
+  async updateOpportunity(
+    opportunityId: string,
+    opportunityData: Partial<OpportunityData>,
+    syncToRaintree: boolean = false,
+    raintreeOpportunityId?: string
+  ): Promise<void> {
+    try {
+      const credentials = this.getPartnerCredentials()
+
+      const response = await fetch(`${API_BASE_URL}/api/opportunities/${opportunityId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          opportunity: opportunityData,
+          partnerCredentials: credentials,
+          syncToRaintree: syncToRaintree,
+          raintreeOpportunityId: raintreeOpportunityId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to update opportunity')
+      }
+
+      const data = await response.json()
+      
+      // Check for Raintree sync errors
+      if (data.data?.errors && data.data.errors.length > 0) {
+        console.warn('⚠️ Raintree sync errors:', data.data.errors)
+        const raintreeError = data.data.errors.find((e: string) => e.includes('Raintree'))
+        if (raintreeError) {
+          throw new Error(`Partner opportunity updated, but ${raintreeError}`)
+        }
+      }
+    } catch (error: any) {
+      console.error('Error updating opportunity:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete an Opportunity from Salesforce via backend API
+   */
+  async deleteOpportunity(
+    opportunityId: string,
+    syncToRaintree: boolean = false,
+    raintreeOpportunityId?: string
+  ): Promise<void> {
+    try {
+      const credentials = this.getPartnerCredentials()
+
+      const response = await fetch(`${API_BASE_URL}/api/opportunities/${opportunityId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          partnerCredentials: credentials,
+          syncToRaintree: syncToRaintree,
+          raintreeOpportunityId: raintreeOpportunityId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to delete opportunity')
+      }
+
+      const data = await response.json()
+      
+      // Check for Raintree sync errors
+      if (data.data?.errors && data.data.errors.length > 0) {
+        console.warn('⚠️ Raintree sync errors:', data.data.errors)
+        const raintreeError = data.data.errors.find((e: string) => e.includes('Raintree'))
+        if (raintreeError) {
+          throw new Error(`Partner opportunity deleted, but ${raintreeError}`)
+        }
+      }
+    } catch (error: any) {
+      console.error('Error deleting opportunity:', error)
+      throw error
+    }
+  }
+
+  /**
    * Create a Lead in Salesforce (placeholder for future implementation)
    */
   async createLead(leadData: {
