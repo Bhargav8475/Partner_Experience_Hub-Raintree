@@ -21,7 +21,7 @@ Partner Experience UI/
 - **Step 1: Login Screen** - Split-screen design with branding and login form
 - **Step 2: CRM Selection** - Interactive connector cards with Salesforce as the primary option
 - **Step 3: Dashboard** - Opportunity management with real-time syncing capabilities
-- **Backend API** - Real Salesforce REST API integration
+- **Backend API** - CRM's REST API integration
 - **Dual Sync** - Create opportunities in partner's Salesforce and optionally in Raintree Salesforce
 
 ## Tech Stack
