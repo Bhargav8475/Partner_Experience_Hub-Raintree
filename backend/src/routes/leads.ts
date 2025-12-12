@@ -273,6 +273,55 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 })
 
+/**
+ * POST /api/leads/:id/sync-raintree
+ * Sync a lead to Raintree Salesforce without updating partner Salesforce
+ */
+router.post('/:id/sync-raintree', async (req: Request, res: Response) => {
+  try {
+    const leadId = req.params.id
+    const { lead, raintreeLeadId }: { lead: any, raintreeLeadId: string } = req.body
+
+    // Validate request
+    if (!lead || !raintreeLeadId) {
+      return res.status(400).json({
+        error: 'Missing required fields: lead and raintreeLeadId are required'
+      })
+    }
+
+    console.log('🔄 Syncing lead to Raintree Salesforce (direct sync)...')
+    console.log('   Partner Lead ID:', leadId)
+    console.log('   Raintree Lead ID:', raintreeLeadId)
+    console.log('   Update Data:', lead)
+
+    try {
+      await RaintreeSalesforceService.updateLead(raintreeLeadId, lead)
+      console.log('✅ Successfully synced to Raintree Salesforce:', raintreeLeadId)
+      
+      res.json({
+        success: true,
+        message: 'Lead synced to Raintree successfully',
+        data: {
+          raintreeUpdated: true
+        }
+      })
+    } catch (error: any) {
+      console.error('❌ Raintree sync failed:', error.message)
+      console.error('   Full error:', error)
+      res.status(500).json({
+        error: 'Failed to sync to Raintree Salesforce',
+        message: error.message
+      })
+    }
+  } catch (error: any) {
+    console.error('Error syncing lead to Raintree:', error)
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
+    })
+  }
+})
+
 export default router
 
 

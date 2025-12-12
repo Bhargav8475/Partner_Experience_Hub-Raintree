@@ -4,10 +4,10 @@ Backend API server for Partner Experience UI with real Salesforce integration.
 
 ## Features
 
-- ✅ Real Salesforce REST API integration
+- ✅ Salesforce REST API integration
 - ✅ Partner Salesforce credential management
 - ✅ Raintree Salesforce automatic sync
-- ✅ Opportunity creation and retrieval
+- ✅ Objects CRUD
 - ✅ TypeScript with Express.js
 
 ## Prerequisites
@@ -38,9 +38,9 @@ Backend API server for Partner Experience UI with real Salesforce integration.
    SALESFORCE_CLIENT_SECRET=your_client_secret_here
    
    # Raintree Salesforce Credentials
-   RAINTREE_SALESFORCE_EMAIL=bhargav667@agentforce.com
-   RAINTREE_SALESFORCE_PASSWORD=dpirj0hyp7
-   RAINTREE_SALESFORCE_SECURITY_TOKEN=k7pk2qQxLl221rkFqNEfy7Xp
+   RAINTREE_SALESFORCE_EMAIL=<RAINTREE_SALESFORCE_EMAIL>
+   RAINTREE_SALESFORCE_PASSWORD=<RAINTREE_SALESFORCE_PASSWORD>
+   RAINTREE_SALESFORCE_SECURITY_TOKEN=<RAINTREE_SALESFORCE_SECURITY_TOKEN>
    
    # Salesforce API Version
    SALESFORCE_API_VERSION=v58.0

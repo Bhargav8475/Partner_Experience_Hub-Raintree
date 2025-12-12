@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { CheckCircle, X, Loader2, Building2, Calendar, DollarSign, TrendingUp, Users, Briefcase, LogOut, AlertCircle, Edit, Trash2, RefreshCw, MoreVertical } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { CheckCircle, X, Loader2, Building2, Calendar, DollarSign, TrendingUp, Users, Briefcase, LogOut, AlertCircle, Edit, Trash2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,6 +15,7 @@ interface Opportunity {
   closeDate: string
   synced: boolean
   raintreeOpportunityId?: string // ID of the opportunity in Raintree Salesforce (if synced)
+  lastModifiedDate?: string // For change detection
 }
 
 interface Lead {
@@ -26,6 +27,7 @@ interface Lead {
   status: string
   synced: boolean
   raintreeLeadId?: string // ID of the lead in Raintree Salesforce (if synced)
+  lastModifiedDate?: string // For change detection
 }
 
 function App() {
@@ -53,6 +55,21 @@ function App() {
   const [isCreating, setIsCreating] = useState<boolean>(false)
   const [isUpdating, setIsUpdating] = useState<boolean>(false)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isPolling, setIsPolling] = useState<boolean>(false)
+  const [syncNotifications, setSyncNotifications] = useState<Array<{id: string, message: string, type: 'success' | 'error' | 'info'}>>([])
+  
+  // Refs to store current values for polling without causing re-renders
+  const opportunitiesRef = useRef<Opportunity[]>([])
+  const leadsRef = useRef<Lead[]>([])
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    opportunitiesRef.current = opportunities
+  }, [opportunities])
+  
+  useEffect(() => {
+    leadsRef.current = leads
+  }, [leads])
   
   // Opportunity form state
   const [oppName, setOppName] = useState<string>('')
@@ -144,7 +161,8 @@ function App() {
           amount: opp.Amount || 0,
           closeDate: opp.CloseDate,
           synced: !!raintreeId, // Set synced to true only if we have a Raintree ID
-          raintreeOpportunityId: raintreeId
+          raintreeOpportunityId: raintreeId,
+          lastModifiedDate: opp.LastModifiedDate
         }
       })
       
@@ -173,7 +191,8 @@ function App() {
           email: lead.Email || '',
           status: lead.Status || 'Open - Not Contacted',
           synced: !!raintreeId, // Set synced to true only if we have a Raintree ID
-          raintreeLeadId: raintreeId
+          raintreeLeadId: raintreeId,
+          lastModifiedDate: lead.LastModifiedDate
         }
       })
       
@@ -194,12 +213,201 @@ function App() {
     }
   }
 
+  // Detect changes and sync to Raintree
+  const detectAndSyncChanges = async () => {
+    if (isPolling || step !== 3) return
+    
+    setIsPolling(true)
+    try {
+      const [sfOpportunities, sfLeads] = await Promise.all([
+        salesforceAPI.getOpportunities(),
+        salesforceAPI.getLeads()
+      ])
+
+      // Load mappings
+      const oppMappings = JSON.parse(localStorage.getItem('opportunity_mappings') || '{}')
+      const leadMappings = JSON.parse(localStorage.getItem('lead_mappings') || '{}')
+
+      // Check for opportunity changes
+      for (const sfOpp of sfOpportunities) {
+        const existingOpp = opportunitiesRef.current.find(o => o.id === sfOpp.Id)
+        const raintreeId = oppMappings[sfOpp.Id]
+        
+        // If opportunity exists and has a Raintree mapping, check for changes
+        if (existingOpp && raintreeId) {
+          // If no lastModifiedDate stored yet, store it and skip sync (first time)
+          if (!existingOpp.lastModifiedDate) {
+            setOpportunities(prev => prev.map(opp => 
+              opp.id === sfOpp.Id 
+                ? { ...opp, lastModifiedDate: sfOpp.LastModifiedDate }
+                : opp
+            ))
+            continue
+          }
+          
+          const existingDate = new Date(existingOpp.lastModifiedDate).getTime()
+          const newDate = new Date(sfOpp.LastModifiedDate).getTime()
+          
+          // If modified date is newer, sync to Raintree
+          if (newDate > existingDate) {
+            console.log(`🔄 Syncing opportunity "${sfOpp.Name}" to Raintree...`)
+            
+            try {
+              // Use direct sync endpoint to avoid updating partner Salesforce again
+              await salesforceAPI.syncOpportunityToRaintree(
+                sfOpp.Id,
+                {
+                  Name: sfOpp.Name,
+                  StageName: sfOpp.StageName,
+                  Amount: sfOpp.Amount || 0,
+                  CloseDate: sfOpp.CloseDate
+                },
+                raintreeId
+              )
+              
+              // Update local state
+              setOpportunities(prev => prev.map(opp => 
+                opp.id === sfOpp.Id 
+                  ? {
+                      ...opp,
+                      name: sfOpp.Name,
+                      stage: sfOpp.StageName,
+                      amount: sfOpp.Amount || 0,
+                      closeDate: sfOpp.CloseDate,
+                      lastModifiedDate: sfOpp.LastModifiedDate
+                    }
+                  : opp
+              ))
+              
+              // Show notification
+              addNotification(`Opportunity "${sfOpp.Name}" synced to Raintree`, 'success')
+            } catch (err: any) {
+              console.error(`Failed to sync opportunity:`, err)
+              addNotification(`Failed to sync "${sfOpp.Name}" to Raintree: ${err.message}`, 'error')
+            }
+          }
+        }
+      }
+
+      // Check for lead changes
+      for (const sfLead of sfLeads) {
+        const existingLead = leadsRef.current.find(l => l.id === sfLead.Id)
+        const raintreeId = leadMappings[sfLead.Id]
+        
+        // If lead exists and has a Raintree mapping, check for changes
+        if (existingLead && raintreeId) {
+          // If no lastModifiedDate stored yet, store it and skip sync (first time)
+          if (!existingLead.lastModifiedDate) {
+            setLeads(prev => prev.map(lead => 
+              lead.id === sfLead.Id 
+                ? { ...lead, lastModifiedDate: sfLead.LastModifiedDate }
+                : lead
+            ))
+            continue
+          }
+          
+          const existingDate = new Date(existingLead.lastModifiedDate).getTime()
+          const newDate = new Date(sfLead.LastModifiedDate).getTime()
+          
+          // If modified date is newer, sync to Raintree
+          if (newDate > existingDate) {
+            console.log(`🔄 Syncing lead "${sfLead.FirstName} ${sfLead.LastName}" to Raintree...`)
+            
+            try {
+              // Use direct sync endpoint to avoid updating partner Salesforce again
+              await salesforceAPI.syncLeadToRaintree(
+                sfLead.Id,
+                {
+                  FirstName: sfLead.FirstName || '',
+                  LastName: sfLead.LastName || '',
+                  Company: sfLead.Company || '',
+                  Email: sfLead.Email || '',
+                  Status: sfLead.Status || 'Open - Not Contacted'
+                },
+                raintreeId
+              )
+              
+              // Update local state
+              setLeads(prev => prev.map(lead => 
+                lead.id === sfLead.Id 
+                  ? {
+                      ...lead,
+                      firstName: sfLead.FirstName || '',
+                      lastName: sfLead.LastName || '',
+                      company: sfLead.Company || '',
+                      email: sfLead.Email || '',
+                      status: sfLead.Status || 'Open - Not Contacted',
+                      lastModifiedDate: sfLead.LastModifiedDate
+                    }
+                  : lead
+              ))
+              
+              // Show notification
+              addNotification(`Lead "${sfLead.FirstName} ${sfLead.LastName}" synced to Raintree`, 'success')
+            } catch (err: any) {
+              console.error(`Failed to sync lead:`, err)
+              addNotification(`Failed to sync "${sfLead.FirstName} ${sfLead.LastName}" to Raintree: ${err.message}`, 'error')
+            }
+          }
+        }
+      }
+
+      // Update all lastModifiedDate values even if no changes detected
+      setOpportunities(prev => prev.map(opp => {
+        const sfOpp = sfOpportunities.find((o: any) => o.Id === opp.id)
+        return sfOpp ? { ...opp, lastModifiedDate: sfOpp.LastModifiedDate } : opp
+      }))
+      
+      setLeads(prev => prev.map(lead => {
+        const sfLead = sfLeads.find((l: any) => l.Id === lead.id)
+        return sfLead ? { ...lead, lastModifiedDate: sfLead.LastModifiedDate } : lead
+      }))
+      
+    } catch (err: any) {
+      console.error('Error detecting changes:', err)
+      addNotification(`Error detecting changes: ${err.message}`, 'error')
+    } finally {
+      setIsPolling(false)
+    }
+  }
+
+  // Add notification
+  const addNotification = (message: string, type: 'success' | 'error' | 'info') => {
+    const id = Date.now().toString()
+    setSyncNotifications(prev => [...prev, { id, message, type }])
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      setSyncNotifications(prev => prev.filter(n => n.id !== id))
+    }, 5000)
+  }
+
   // Load data when dashboard is accessed
   useEffect(() => {
     if (step === 3) {
       loadSalesforceData()
     }
   }, [step])
+
+  // Poll for changes every 10 seconds when on dashboard
+  useEffect(() => {
+    if (step !== 3) return
+
+    // Initial poll after 5 seconds
+    const initialTimeout = setTimeout(() => {
+      detectAndSyncChanges()
+    }, 5000)
+
+    // Then poll every 10 seconds
+    const pollInterval = setInterval(() => {
+      detectAndSyncChanges()
+    }, 10000)
+
+    return () => {
+      clearTimeout(initialTimeout)
+      clearInterval(pollInterval)
+    }
+  }, [step]) // Only depend on step, not opportunities/leads to avoid infinite loops
 
   // Step 3: Handle Opportunity Creation
   const handleCreateOpportunity = async (e: React.FormEvent) => {
@@ -210,7 +418,7 @@ function App() {
     try {
       // Always sync to Salesforce (the toggle is for Raintree sync)
       // Get the full response to check for Raintree ID
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+      const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001'
       const credentials = {
         email: localStorage.getItem('salesforce_username') || '',
         password: localStorage.getItem('salesforce_password') || '',
@@ -401,7 +609,7 @@ function App() {
     try {
       // Always sync to Salesforce (the toggle is for Raintree sync)
       // Get the full response to check for Raintree ID
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+      const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001'
       const credentials = {
         email: localStorage.getItem('salesforce_username') || '',
         password: localStorage.getItem('salesforce_password') || '',
@@ -605,11 +813,7 @@ function App() {
           <Card className="w-full max-w-md border-gray-100 shadow-sm">
             <CardHeader className="space-y-1 text-center pb-6">
               <div className="flex justify-center mb-6">
-                <img 
-                  src="/image.png" 
-                  alt="Raintree Systems" 
-                  className="h-14 object-contain"
-                />
+                <img src="/image.png" alt="Raintree Systems" className="h-14 object-contain"/>
               </div>
               <CardTitle className="text-2xl font-semibold mb-1 text-gray-900">Partner Experience Hub</CardTitle>
               <CardDescription className="text-sm text-gray-500">
@@ -658,9 +862,7 @@ function App() {
                 >
                   Sign in
                 </Button>
-                <p className="text-xs text-center text-gray-400 mt-4">
-                  Default credentials: demo@example.com / password123
-                </p>
+                
               </form>
             </CardContent>
           </Card>
@@ -813,6 +1015,55 @@ function App() {
           {/* Main Content */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-8 max-w-7xl mx-auto">
+              {/* Sync Notifications */}
+              {syncNotifications.length > 0 && (
+                <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md">
+                  {syncNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`rounded-md p-4 shadow-lg flex items-center space-x-3 animate-in slide-in-from-right ${
+                        notification.type === 'success'
+                          ? 'bg-green-50 border border-green-200'
+                          : notification.type === 'error'
+                          ? 'bg-red-50 border border-red-200'
+                          : 'bg-blue-50 border border-blue-200'
+                      }`}
+                    >
+                      {notification.type === 'success' ? (
+                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      ) : notification.type === 'error' ? (
+                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                      ) : (
+                        <Loader2 className="w-5 h-5 text-blue-600 flex-shrink-0 animate-spin" />
+                      )}
+                      <div className="flex-1">
+                        <p className={`text-sm font-medium ${
+                          notification.type === 'success'
+                            ? 'text-green-800'
+                            : notification.type === 'error'
+                            ? 'text-red-800'
+                            : 'text-blue-800'
+                        }`}>
+                          {notification.message}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setSyncNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                        className={`flex-shrink-0 ${
+                          notification.type === 'success'
+                            ? 'text-green-600 hover:text-green-800'
+                            : notification.type === 'error'
+                            ? 'text-red-600 hover:text-red-800'
+                            : 'text-blue-600 hover:text-blue-800'
+                        }`}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Error Display */}
               {error && (
                 <div className="bg-red-50 border border-red-100 rounded-md p-4 mb-6 flex items-center space-x-3">
@@ -845,7 +1096,7 @@ function App() {
                   <div className="flex items-center space-x-2">
                     <Button
                       onClick={loadSalesforceData}
-                      disabled={isLoading}
+                      disabled={isLoading || isPolling}
                       variant="outline"
                       size="sm"
                       className="text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"

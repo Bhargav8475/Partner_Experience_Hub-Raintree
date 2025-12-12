@@ -462,6 +462,80 @@ class SalesforceAPI {
   }
 
   /**
+   * Sync an opportunity directly to Raintree Salesforce (without updating partner Salesforce)
+   */
+  async syncOpportunityToRaintree(
+    opportunityId: string,
+    opportunityData: OpportunityData,
+    raintreeOpportunityId: string
+  ): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/opportunities/${opportunityId}/sync-raintree`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          opportunity: opportunityData,
+          raintreeOpportunityId: raintreeOpportunityId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to sync opportunity to Raintree')
+      }
+
+      const data = await response.json()
+      console.log('✅ Opportunity synced to Raintree:', data)
+    } catch (error: any) {
+      console.error('Error syncing opportunity to Raintree:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Sync a lead directly to Raintree Salesforce (without updating partner Salesforce)
+   */
+  async syncLeadToRaintree(
+    leadId: string,
+    leadData: {
+      FirstName: string
+      LastName: string
+      Company: string
+      Email: string
+      Status: string
+      Phone?: string
+      Title?: string
+    },
+    raintreeLeadId: string
+  ): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leads/${leadId}/sync-raintree`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          lead: leadData,
+          raintreeLeadId: raintreeLeadId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to sync lead to Raintree')
+      }
+
+      const data = await response.json()
+      console.log('✅ Lead synced to Raintree:', data)
+    } catch (error: any) {
+      console.error('Error syncing lead to Raintree:', error)
+      throw error
+    }
+  }
+
+  /**
    * Clear authentication
    */
   logout(): void {

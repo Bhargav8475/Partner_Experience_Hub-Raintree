@@ -273,5 +273,54 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 })
 
+/**
+ * POST /api/opportunities/:id/sync-raintree
+ * Sync an opportunity to Raintree Salesforce without updating partner Salesforce
+ */
+router.post('/:id/sync-raintree', async (req: Request, res: Response) => {
+  try {
+    const opportunityId = req.params.id
+    const { opportunity, raintreeOpportunityId }: { opportunity: OpportunityData, raintreeOpportunityId: string } = req.body
+
+    // Validate request
+    if (!opportunity || !raintreeOpportunityId) {
+      return res.status(400).json({
+        error: 'Missing required fields: opportunity and raintreeOpportunityId are required'
+      })
+    }
+
+    console.log('🔄 Syncing opportunity to Raintree Salesforce (direct sync)...')
+    console.log('   Partner Opportunity ID:', opportunityId)
+    console.log('   Raintree Opportunity ID:', raintreeOpportunityId)
+    console.log('   Update Data:', opportunity)
+
+    try {
+      await RaintreeSalesforceService.updateOpportunity(raintreeOpportunityId, opportunity)
+      console.log('✅ Successfully synced to Raintree Salesforce:', raintreeOpportunityId)
+      
+      res.json({
+        success: true,
+        message: 'Opportunity synced to Raintree successfully',
+        data: {
+          raintreeUpdated: true
+        }
+      })
+    } catch (error: any) {
+      console.error('❌ Raintree sync failed:', error.message)
+      console.error('   Full error:', error)
+      res.status(500).json({
+        error: 'Failed to sync to Raintree Salesforce',
+        message: error.message
+      })
+    }
+  } catch (error: any) {
+    console.error('Error syncing opportunity to Raintree:', error)
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
+    })
+  }
+})
+
 export default router
 
